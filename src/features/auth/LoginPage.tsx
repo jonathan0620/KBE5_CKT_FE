@@ -12,6 +12,7 @@ import {
   LinkText,
 } from './LoginPage.styles';
 import { TextInput } from '@/components/ui/input/input/TextInput';
+import api from '@/libs/axios';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -19,21 +20,32 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleClick = () => {
-    console.log('로그인 버튼 !! > ', email);
-    console.log('로그인 버튼 !! > ', password);
+  const handleLogin = async () => {
+    try {
+      const response = await api.post('/api/v1/auth/login', {
+        email,
+        password,
+      });
 
-    navigate('/');
-  };
+      const { accessToken, refreshToken } = response.data;
 
-  const handleEnter = () => {
-    console.log('엔터 버튼 !!', email);
-    console.log('엔터 버튼 !!', password);
+      if (accessToken && refreshToken) {
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        navigate('/');
+      } else {
+        console.error('토큰이 없습니다.');
+      }
+    } catch (error) {
+      console.error('로그인 실패', error);
+    }
   };
 
   // TODO: axios 써서 Login API 호출하고
   // 일치하면 dashboard 로 이동
   // 틀리면 error message 노출
+  // 로그인 api 호출하고 -> header 값 가져와서 store or cookie 에 access token이랑 refresh token 저장
+  // 로그인 api는 axios
 
   return (
     <LoginContainer>
@@ -48,10 +60,8 @@ const LoginPage = () => {
           id="email"
           label="이메일"
           placeholder="이메일 주소 입력"
-          onChange={value => {
-            setEmail(value);
-          }}
-          onEnter={handleEnter}
+          onChange={setEmail}
+          onEnter={handleLogin}
         />
         <TextInput
           width="100%"
@@ -59,17 +69,15 @@ const LoginPage = () => {
           id="password"
           label="비밀번호"
           placeholder="••••••••"
-          onChange={value => {
-            setPassword(value);
-          }}
-          onEnter={handleEnter}
+          onChange={setPassword}
+          onEnter={handleLogin}
         />
 
         <LoginContentSection>
           <LinkText>비밀번호 찾기</LinkText>
         </LoginContentSection>
 
-        <BasicButton width="100%" onClick={handleClick}>
+        <BasicButton width="100%" onClick={handleLogin}>
           로그인
         </BasicButton>
       </LoginForm>
