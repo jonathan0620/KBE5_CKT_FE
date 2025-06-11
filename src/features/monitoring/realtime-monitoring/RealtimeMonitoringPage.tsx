@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 
@@ -18,104 +18,54 @@ import {
 } from './RealtimeMonitoringPage.styles';
 import { Text } from '@/components/ui/text/Text';
 import VehicleCard from './VehicleCard';
+import api from '@/libs/axios';
 
 const RealtimeMonitoringPage: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [status, setStatus] = useState({ total: 0, running: 0, stopped: 0 });
 
-  const vehicles = [
-    {
-      licensePlate: '12가 3456',
-      status: '운행중',
-      carInfo: '기아 K5 | 김철수',
-    },
-    {
-      licensePlate: '34나 5678',
-      status: '운행중',
-      carInfo: '현대 아반떼 | 홍길동',
-    },
-    {
-      licensePlate: '56다 7890',
-      status: '운행중',
-      carInfo: '현대 쏘나타 | 이영희',
-    },
-    {
-      licensePlate: '78라 0123',
-      status: '휴식중',
-      carInfo: '르노삼성 QM6 | 박영희',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-    {
-      licensePlate: '90마 4567',
-      status: '정비중',
-      carInfo: '쉐보레 말리부 | 최민수',
-    },
-  ];
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const response = await api.get('/api/v1/tracking/vehicles/running');
+        if (response.data.code === '000' && Array.isArray(response.data.data)) {
+          const mapped = response.data.data.map((item: any) => ({
+            licensePlate: item.registrationNumber,
+            status: '운행중',
+            carInfo: `${item.manufacturer} ${item.modelName} | ${item.customerName}`,
+          }));
+          setVehicles(mapped);
+        } else {
+          setVehicles([]);
+        }
+      } catch (error) {
+        setVehicles([]);
+      }
+    };
+    fetchVehicles();
+  }, []);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await api.get('/api/v1/tracking/status');
+        if (response.data.code === '000' && response.data.data) {
+          setStatus(response.data.data);
+        }
+      } catch (error) {
+        setStatus({ total: 0, running: 0, stopped: 0 });
+      }
+    };
+    fetchStatus();
+  }, []);
 
   return (
     <DashboardContainer>
       <HeaderContainer>
-        <StatCard label="전체 차량" count={248} unit="대" unitColor="blue" />
-        <StatCard label="운행중 차량" count={124} unit="대" unitColor="green" />
-        <StatCard label="미운행 차량" count={112} unit="대" unitColor="yellow" />
+        <StatCard label="전체 차량" count={status.total} unit="대" unitColor="blue" />
+        <StatCard label="운행중 차량" count={status.running} unit="대" unitColor="green" />
+        <StatCard label="미운행 차량" count={status.stopped} unit="대" unitColor="yellow" />
         <StatCard label="미관제 차량" count={12} unit="대" unitColor="red" />
       </HeaderContainer>
 
@@ -136,8 +86,12 @@ const RealtimeMonitoringPage: React.FC = () => {
             />
             <Text type="subheading2">운행 중인 차량 목록</Text>
             <VehicleList>
-              {vehicles.map(vehicle => (
-                <VehicleCard key={vehicle.licensePlate} licensePlate={vehicle.licensePlate} carInfo={vehicle.carInfo} />
+              {vehicles.map((vehicle, idx) => (
+                <VehicleCard
+                  key={vehicle.licensePlate + idx}
+                  licensePlate={vehicle.licensePlate}
+                  carInfo={vehicle.carInfo}
+                />
               ))}
             </VehicleList>
           </FilterWrap>
