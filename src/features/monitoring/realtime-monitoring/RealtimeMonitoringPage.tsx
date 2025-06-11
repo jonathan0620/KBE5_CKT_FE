@@ -32,7 +32,6 @@ const RealtimeMonitoringPage: React.FC = () => {
         if (response.data.code === '000' && Array.isArray(response.data.data)) {
           const mapped = response.data.data.map((item: any) => ({
             licensePlate: item.registrationNumber,
-            status: '운행중',
             carInfo: `${item.manufacturer} ${item.modelName} | ${item.customerName}`,
           }));
           setVehicles(mapped);
