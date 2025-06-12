@@ -105,7 +105,6 @@ const DrivingHistoryPage: React.FC = () => {
   const [vehicleNumber, setVehicleNumber] = useState<string>('');
   const [driverKeyword, setDriverKeyword] = useState<string>('');
   const [vehicleOptions, setVehicleOptions] = useState(VEHICLE_OPTIONS);
-  const [searchResults, setSearchResults] = useState<{ label: string; value: string }[]>([]);
 
   const [vehicleLogData, setVehicleLogData] = useState<any[]>([]);
   const [weeklyLogData, setWeeklyLogData] = useState<any[]>([]);
@@ -133,44 +132,9 @@ const DrivingHistoryPage: React.FC = () => {
     }
   };
 
-  // 운전자명 검색
-  const searchDrivers = async (keyword: string) => {
-    if (!keyword) {
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      const response = await api.get('/api/v1/customers');
-      if (response.data.code === '000' && response.data.data?.list) {
-        const filteredResults = response.data.data.list
-          .filter((customer: any) => customer.customerName.toLowerCase().includes(keyword.toLowerCase()))
-          .map((customer: any) => ({
-            label: customer.customerName,
-            value: customer.customerName,
-          }));
-        setSearchResults(filteredResults);
-      }
-    } catch (error) {
-      console.error('운전자명 검색 실패:', error);
-      setSearchResults([]);
-    }
-  };
-
   useEffect(() => {
     fetchVehicleList();
   }, []);
-
-  // 운전자명 입력 시 검색 실행
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (driverKeyword) {
-        searchDrivers(driverKeyword);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [driverKeyword]);
 
   // 차량별 운행 내역 조회
   const fetchVehicleLogs = async () => {
