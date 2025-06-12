@@ -6,9 +6,9 @@ interface VehicleCardProps {
   carInfo: string;
 }
 
-const VehicleCard: React.FC<VehicleCardProps> = ({ licensePlate, carInfo }) => {
+const VehicleCard: React.FC<VehicleCardProps> = ({ licensePlate, carInfo, onClick }) => {
   return (
-    <CardContainer>
+    <CardContainer onClick={onClick} style={{ cursor: 'pointer' }}>
       <CardContent>
         <LicensePlateText>{licensePlate}</LicensePlateText>
         <CarInfoText>{carInfo}</CarInfoText>
