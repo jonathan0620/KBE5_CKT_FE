@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useCallback } from 'react';
+import styled, { css } from 'styled-components';
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 
@@ -10,6 +10,7 @@ import {
   FilterWrap,
   TableContainer,
   TableTitle,
+  TitleContainer,
 } from '@/components/layout/DashboardLayout.styles';
 
 import { IconButton } from '@/components/ui/button/IconButton';
@@ -19,7 +20,6 @@ import { BasicTable } from '@/components/ui/table/table/BasicTable';
 import { DateInput } from '@/components/ui/input/date/DateInput';
 import api from '@/libs/axios';
 
-// -- 필터: 드롭다운 옵션 예시 ------------------------------------------------
 const VEHICLE_OPTIONS = [{ label: '전체', value: '' }];
 
 // -- 테이블 헤더 정의 --------------------------------------------------------
@@ -73,8 +73,19 @@ const StyledDailySection = styled.div`
 
 // -- DrivingHistoryPage 컴포넌트 ----------------------------------------------
 const DrivingHistoryPage: React.FC = () => {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const getDefaultDateRange = () => {
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    return {
+      startDate: oneMonthAgo,
+      endDate: today,
+    };
+  };
+
+  const defaultDateRange = getDefaultDateRange();
+  const [startDate, setStartDate] = useState<Date>(defaultDateRange.startDate);
+  const [endDate, setEndDate] = useState<Date>(defaultDateRange.endDate);
   const [vehicleNumber, setVehicleNumber] = useState<string>('');
   const [driverKeyword, setDriverKeyword] = useState<string>('');
   const [vehicleOptions, setVehicleOptions] = useState(VEHICLE_OPTIONS);
@@ -85,9 +96,11 @@ const DrivingHistoryPage: React.FC = () => {
   const [selectedVehicleData, setSelectedVehicleData] = useState<any>(null);
   const [selectedWeeklyData, setSelectedWeeklyData] = useState<any>(null);
   const [lastQueryParams, setLastQueryParams] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   // 차량번호 목록 조회
-  const fetchVehicleList = async () => {
+  const fetchVehicleList = useCallback(async () => {
     try {
       const response = await api.get('/api/v1/vehicles');
       if (response.data.code === '000' && response.data.data?.list) {
@@ -103,11 +116,11 @@ const DrivingHistoryPage: React.FC = () => {
     } catch (error) {
       console.error('차량번호 목록 조회 실패:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchVehicleList();
-  }, []);
+  }, [fetchVehicleList]);
 
   // 차량별 운행 내역 조회
   const fetchVehicleLogs = async () => {
@@ -117,6 +130,9 @@ const DrivingHistoryPage: React.FC = () => {
     }
 
     try {
+      setIsLoading(true);
+      setError('');
+
       const from = new Date(startDate);
       from.setHours(0, 0, 0, 0);
       const to = new Date(endDate);
@@ -130,8 +146,6 @@ const DrivingHistoryPage: React.FC = () => {
       };
       setLastQueryParams(params);
       const response = await api.get('/api/v1/logs/summary', { params });
-
-      console.log('차량별 운행 내역 API 응답:', response.data);
 
       if (Array.isArray(response.data)) {
         const data = response.data.map((item: any) => {
@@ -148,16 +162,16 @@ const DrivingHistoryPage: React.FC = () => {
             drivingRate: calculateDrivingRate(item.drivingDays || 0, from.toISOString(), to.toISOString()),
           };
         });
-
-        console.log('매핑된 차량별 데이터:', data);
         setVehicleLogData(data);
       } else {
-        console.error('차량별 운행 내역 데이터 형식이 올바르지 않습니다:', response.data);
         setVehicleLogData([]);
       }
     } catch (error) {
       console.error('차량별 운행 내역 조회 실패:', error);
+      setError('데이터를 가져오는 중 오류가 발생했습니다.');
       setVehicleLogData([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -367,7 +381,7 @@ const DrivingHistoryPage: React.FC = () => {
         <BasicTable
           tableHeaders={VEHICLE_LOG_TABLE_HEADERS}
           data={vehicleLogData}
-          message="기간을 조회해 주세요."
+          message={isLoading ? '로딩 중입니다...' : error || '기간을 조회해 주세요.'}
           onRowClick={handleVehicleSelect}
         />
       </TableContainer>
