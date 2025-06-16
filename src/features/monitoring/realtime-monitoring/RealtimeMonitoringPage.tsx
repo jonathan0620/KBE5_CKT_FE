@@ -23,11 +23,11 @@ import { Text } from '@/components/ui/text/Text';
 import VehicleCard from './VehicleCard';
 import api from '@/libs/axios';
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+const customIcon = new L.Icon({
+  iconUrl: '/icon/marker.svg',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
 });
 
 interface Vehicle {
@@ -111,6 +111,7 @@ const RealtimeMonitoringPage: React.FC = () => {
     if (vehicle.lat && vehicle.lon && mapRef.current) {
       const lat = Number(vehicle.lat) / 1000000;
       const lon = Number(vehicle.lon) / 1000000;
+      mapRef.current.closePopup();
       mapRef.current.setView([lat, lon], 15);
     }
   }, []);
@@ -164,8 +165,8 @@ const RealtimeMonitoringPage: React.FC = () => {
                   const lat = Number(vehicle.lat) / 1000000;
                   const lon = Number(vehicle.lon) / 1000000;
                   return (
-                    <Marker key={vehicle.vehicleId} position={[lat, lon]}>
-                      <Popup>
+                    <Marker key={vehicle.vehicleId} position={[lat, lon]} icon={customIcon}>
+                      <Popup closeButton={false}>
                         <div>
                           <p>차량번호: {vehicle.registrationNumber}</p>
                           <p>
