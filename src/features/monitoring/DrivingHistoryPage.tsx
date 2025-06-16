@@ -100,8 +100,19 @@ const StyledDailySection = styled.div`
 
 // -- DrivingHistoryPage 컴포넌트 ----------------------------------------------
 const DrivingHistoryPage: React.FC = () => {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const getDefaultDateRange = () => {
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    return {
+      startDate: oneMonthAgo,
+      endDate: today,
+    };
+  };
+
+  const defaultDateRange = getDefaultDateRange();
+  const [startDate, setStartDate] = useState<Date | null>(defaultDateRange.startDate);
+  const [endDate, setEndDate] = useState<Date | null>(defaultDateRange.endDate);
   const [vehicleNumber, setVehicleNumber] = useState<string>('');
   const [driverKeyword, setDriverKeyword] = useState<string>('');
   const [vehicleOptions, setVehicleOptions] = useState(VEHICLE_OPTIONS);
@@ -112,6 +123,11 @@ const DrivingHistoryPage: React.FC = () => {
   const [selectedVehicleData, setSelectedVehicleData] = useState<any>(null);
   const [selectedWeeklyData, setSelectedWeeklyData] = useState<any>(null);
   const [lastQueryParams, setLastQueryParams] = useState<any>(null);
+
+  // 차량번호 목록만 초기 로드
+  useEffect(() => {
+    fetchVehicleList();
+  }, []);
 
   // 차량번호 목록 조회
   const fetchVehicleList = async () => {
@@ -131,10 +147,6 @@ const DrivingHistoryPage: React.FC = () => {
       console.error('차량번호 목록 조회 실패:', error);
     }
   };
-
-  useEffect(() => {
-    fetchVehicleList();
-  }, []);
 
   // 차량별 운행 내역 조회
   const fetchVehicleLogs = async () => {
