@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled, { css } from 'styled-components';
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
@@ -30,7 +30,7 @@ const TitleContainer = styled(BaseTitleContainer)`
   justify-content: flex-start;
 `;
 
-const TabItem = styled.div<{ active?: boolean }>`
+const TabItem = styled.div<{ $active?: boolean }>`
   font-size: 18px;
   font-weight: 500;
   cursor: pointer;
@@ -39,14 +39,13 @@ const TabItem = styled.div<{ active?: boolean }>`
   border-bottom: 2px solid transparent;
 
   ${props =>
-    props.active &&
+    props.$active &&
     css`
       color: #1d4ed8;
       border-bottom: 2px solid #1d4ed8;
     `}
 `;
 
-// -- 필터: 드롭다운 옵션 예시 ------------------------------------------------
 const VEHICLE_OPTIONS = [{ label: '전체', value: '' }];
 
 // -- 테이블 헤더 정의 --------------------------------------------------------
@@ -124,13 +123,8 @@ const DrivingHistoryPage: React.FC = () => {
   const [selectedWeeklyData, setSelectedWeeklyData] = useState<any>(null);
   const [lastQueryParams, setLastQueryParams] = useState<any>(null);
 
-  // 차량번호 목록만 초기 로드
-  useEffect(() => {
-    fetchVehicleList();
-  }, []);
-
   // 차량번호 목록 조회
-  const fetchVehicleList = async () => {
+  const fetchVehicleList = useCallback(async () => {
     try {
       const response = await api.get('/api/v1/vehicles');
       if (response.data.code === '000' && response.data.data?.list) {
@@ -146,7 +140,11 @@ const DrivingHistoryPage: React.FC = () => {
     } catch (error) {
       console.error('차량번호 목록 조회 실패:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchVehicleList();
+  }, [fetchVehicleList]);
 
   // 차량별 운행 내역 조회
   const fetchVehicleLogs = async () => {
@@ -342,7 +340,7 @@ const DrivingHistoryPage: React.FC = () => {
       {/* ──────────── 상단 탭 네비게이션 ──────────── */}
       <TitleContainer>
         <TabItem>운행일지</TabItem>
-        <TabItem active>운행내역</TabItem>
+        <TabItem $active>운행내역</TabItem>
       </TitleContainer>
 
       {/* ──────────── 필터 섹션 ──────────── */}
