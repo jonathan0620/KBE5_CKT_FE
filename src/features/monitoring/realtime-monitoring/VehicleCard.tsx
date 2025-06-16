@@ -2,6 +2,7 @@ import React from 'react';
 import { CardContainer, CardContent, LicensePlateText, CarInfoText } from './VehicleCard.styles';
 
 interface VehicleCardProps {
+  id: number;
   licensePlate: string;
   carInfo: string;
   onClick?: () => void;

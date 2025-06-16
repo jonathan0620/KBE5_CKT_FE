@@ -50,11 +50,44 @@ export interface UseVehicleRegisterReturn {
  */
 export interface UseDetailPanelReturn {
   selectedItem: Vehicle | null;
+  formData: VehicleUpdateFormData;
+  errors: VehicleUpdateFormErrors;
   openPanel: (id: number) => void;
   closePanel: () => void;
   isLoadingDetail: boolean;
-  handleUpdateVehicle: (data: Vehicle) => Promise<Vehicle | undefined>;
+  handleInputChange: (id: keyof VehicleUpdateFormData, value: string) => void;
+  initForm: (item: Vehicle) => void;
+  resetForm: () => void;
+  handleUpdateVehicle: () => Promise<boolean>;
   handleDeleteVehicle: () => Promise<boolean>;
+}
+
+// --- 차량 수정 폼 관련 타입 ---
+
+/**
+ * 차량 수정 폼의 데이터 구조를 정의합니다.
+ */
+export interface VehicleUpdateFormData {
+  modelYear: string;
+  manufacturer: string;
+  modelName: string;
+  batteryVoltage: string;
+  fuelType: string;
+  transmissionType: string;
+  memo: string;
+}
+
+/**
+ * 차량 수정 폼의 유효성 검사 에러 메시지 구조를 정의합니다.
+ */
+export interface VehicleUpdateFormErrors {
+  modelYear?: string;
+  manufacturer?: string;
+  modelName?: string;
+  batteryVoltage?: string;
+  fuelType?: string;
+  transmissionType?: string;
+  memo?: string;
 }
 
 // --- 테이블 헤더 정의 ---
@@ -69,8 +102,8 @@ export const VEHICLE_TABLE_HEADERS: TableHeader<VehicleSummary>[] = [
   { label: '차량 번호', key: 'registrationNumber', width: '9%', align: 'center' },
   { label: '연식', key: 'modelYear', width: '6%', align: 'center' },
   { label: '배터리 전력', key: 'batteryVoltage', width: '8%', align: 'center' },
-  { label: '연료 타입', key: 'fuelType', width: '8%', align: 'center' },
-  { label: '변속기', key: 'transmissionType', width: '8%', align: 'center' },
+  { label: '연료 타입', key: 'fuelTypeName', width: '8%', align: 'center' },
+  { label: '변속기', key: 'transmissionTypeName', width: '8%', align: 'center' },
   {
     label: '상태',
     key: 'status',
@@ -102,21 +135,21 @@ export const STATUS_OPTIONS: DropdownOption[] = [
  * 연료 유형 선택을 위한 드롭다운 옵션입니다.
  */
 export const FUEL_TYPE_OPTIONS: DropdownOption[] = [
-  { value: 'gasoline', label: '가솔린' },
-  { value: 'diesel', label: '디젤' },
-  { value: 'electric', label: '전기' },
-  { value: 'hybrid', label: '하이브리드' },
-  { value: 'lpg', label: 'LPG' },
+  { value: 'GASOLINE', label: '가솔린' },
+  { value: 'DIESEL', label: '디젤' },
+  { value: 'ELECTRIC', label: '전기' },
+  { value: 'HYBRID', label: '하이브리드' },
+  { value: 'LPG', label: 'LPG' },
 ];
 
 /**
  * 변속기 유형 선택을 위한 드롭다운 옵션입니다.
  */
 export const TRANSMISSION_TYPE_OPTIONS: DropdownOption[] = [
-  { value: 'automatic', label: '자동' },
-  { value: 'manual', label: '수동' },
-  { value: 'cvt', label: 'CVT' },
-  { value: 'dct', label: 'DCT' },
+  { value: 'AUTOMATIC', label: '자동' },
+  { value: 'MANUAL', label: '수동' },
+  { value: 'CVT', label: 'CVT' },
+  { value: 'DCT', label: 'DCT' },
 ];
 
 // --- API 통신을 위한 타입 정의 ---
@@ -153,7 +186,9 @@ export interface VehicleSummary {
   modelName: string;
   batteryVoltage: string;
   fuelType: string;
+  fuelTypeName: string;
   transmissionType: string;
+  transmissionTypeName: string;
   status: string;
   statusName: string;
   memo: string;
@@ -195,4 +230,24 @@ export interface Vehicle {
   status: string;
   statusName: string;
   memo?: string;
+}
+
+/**
+ * 차량 수정 요청 (Request)의 인터페이스입니다.
+ */
+export interface UpdateVehicleRequest {
+  modelYear: string;
+  manufacturer: string;
+  modelName: string;
+  batteryVoltage: string;
+  fuelType: string;
+  transmissionType: string;
+  memo: string;
+}
+
+/**
+ * 차량 수정 응답 (Response)의 인터페이스입니다.
+ */
+export interface UpdateVehicleResponse {
+  id: number;
 }

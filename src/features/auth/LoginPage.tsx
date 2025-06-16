@@ -2,17 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { BasicButton } from '@/components/ui/button/BasicButton';
-import {
-  LoginContainer,
-  LoginForm,
-  LoginHeaderSection,
-  LoginContentSection,
-  Heading1,
-  BodyText,
-  LinkText,
-} from './LoginPage.styles';
+import { LoginContainer, LoginForm, LoginHeaderSection, Heading1, BodyText } from './LoginPage.styles';
 import { TextInput } from '@/components/ui/input/input/TextInput';
 import api from '@/libs/axios';
+
+import { toast } from 'react-toastify';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,8 +30,8 @@ const LoginPage = () => {
       } else {
         console.error('토큰이 없습니다.');
       }
-    } catch (error) {
-      console.error('로그인 실패', error);
+    } catch {
+      toast.error('이메일과 비밀번호를 확인해주세요');
     }
   };
 
@@ -75,9 +69,10 @@ const LoginPage = () => {
           onEnter={handleLogin}
         />
 
-        <LoginContentSection>
+        {/* TODO: 0613 중간 발표로 주석 처리 */}
+        {/* <LoginContentSection>
           <LinkText>비밀번호 찾기</LinkText>
-        </LoginContentSection>
+        </LoginContentSection> */}
 
         <BasicButton width="100%" onClick={handleLogin}>
           로그인

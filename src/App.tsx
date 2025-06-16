@@ -4,11 +4,14 @@ import { ThemeProvider } from 'styled-components';
 import { ThemeContextProvider, useTheme } from '@/context/ThemeContext';
 import { LoadingProvider } from './context/LoadingContext';
 import GlobalStyle from '@/styles/GlobalStyle';
-import DashboardLayout from '@/layouts/DashboardLayout';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-datepicker/dist/react-datepicker.css';
+
+// 레이아웃
+import DashboardLayout from '@/layouts/DashboardLayout';
+import MonitoringLayout from '@/features/monitoring/layout/MonitoringLayout';
 
 // 페이지
 import LoginPage from '@/features/auth/LoginPage';
@@ -45,9 +48,11 @@ function App() {
                 <Route path="/" element={<RealtimeMonitoringPage />} />
 
                 <Route path="/monitoring">
-                  <Route index element={<DrivingLogPage />} />
-                  <Route path="driving-log" element={<DrivingLogPage />} />
-                  <Route path="driving-history" element={<DrivingHistoryPage />} />
+                  <Route element={<MonitoringLayout />}>
+                    <Route index element={<DrivingLogPage />} />
+                    <Route path="driving-log" element={<DrivingLogPage />} />
+                    <Route path="driving-history" element={<DrivingHistoryPage />} />
+                  </Route>
                 </Route>
 
                 <Route path="/vehicle">

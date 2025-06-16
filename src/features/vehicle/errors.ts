@@ -1,0 +1,2 @@
+export const VEHICLE_NO_FOUNDED = '404';
+export const DUPLICATE_REGISTRATION_NUMBER_CODE = '409';

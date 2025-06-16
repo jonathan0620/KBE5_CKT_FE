@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 import { LayoutMain, LayoutHeader, Logo, MainNavigation } from './DashboardLayout.styles';
@@ -10,6 +10,7 @@ import UserCircle from '@/components/ui/circle/UserCircle';
 import type { UserInfo } from '@/components/ui/circle/types';
 
 const DashboardLayout: React.FC<LayoutProps> = ({ title }) => {
+  const navigate = useNavigate();
   const location = useLocation();
   const MotionLogo = motion(Logo);
 
@@ -20,6 +21,8 @@ const DashboardLayout: React.FC<LayoutProps> = ({ title }) => {
   const handleLogout = () => {
     console.log('로그아웃 버튼 클릭!');
     setCurrentUser(null);
+
+    navigate('/login');
   };
 
   return (

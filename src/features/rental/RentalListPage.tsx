@@ -22,6 +22,8 @@ import { BasicTable } from '@/components/ui/table/table/BasicTable';
 import { Pagination } from '@/components/ui/table/pagination/Pagination';
 import { RentalRegisterPopup } from './RentalRegisterPopup';
 
+import { useConfirm } from '@/hooks/useConfirm';
+
 const RentalListPage: React.FC = () => {
   // -----------------------------------------------------------------------
   // 🚀 데이터 로딩 및 필터 상태 관리 (useRentalList 훅 활용)
@@ -38,6 +40,7 @@ const RentalListPage: React.FC = () => {
     setCurrentPage, // 현재 페이지를 업데이트하는 함수
     refetch, // 데이터 다시 불러오는 함수
   } = useRentalList();
+  const { confirm } = useConfirm();
 
   // 예약 등록 팝업 제어
   const [isRegisterPopupOpen, setIsRegisterPopupOpen] = useState(false);
@@ -98,15 +101,27 @@ const RentalListPage: React.FC = () => {
    * 테이블 로우 클릭 시 예약 상세 패널 열기.
    * @param rowData 클릭된 예약의 요약 정보 (RentalSummary)
    */
-  const handleRowClick = useCallback((rowData: RentalSummary) => {
+  const handleRowClick = useCallback(async (rowData: RentalSummary) => {
     console.log('선택된 row > ', rowData);
+    await confirm({
+      title: '현재 기능이 구현되지 않았습니다.',
+      content: `담당자(최대영님)께 문의부탁드립니다.`,
+      confirmText: '갈구기',
+      cancelText: '문의',
+    });
   }, []);
 
   /**
    * 예약 등록 팝업 열기 핸들러.
    */
-  const handleRegister = useCallback(() => {
-    setIsRegisterPopupOpen(true);
+  const handleRegister = useCallback(async () => {
+    // setIsRegisterPopupOpen(true);
+    await confirm({
+      title: '현재 기능이 구현되지 않았습니다.',
+      content: `담당자(최대영님)께 문의부탁드립니다.`,
+      confirmText: '갈구기',
+      cancelText: '문의',
+    });
   }, []);
 
   /**

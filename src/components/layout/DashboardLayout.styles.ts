@@ -41,7 +41,9 @@ export const FilterWrap = styled.div`
 `;
 
 export const FilterContent = styled.div`
+  width: calc(100% - 100px);
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 `;
 

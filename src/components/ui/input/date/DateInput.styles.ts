@@ -2,6 +2,7 @@ import styled, { css } from 'styled-components';
 import type { FieldContainerProps, StyledDateInputContainerProps } from './types';
 
 export const FieldContainer = styled.div<FieldContainerProps>`
+  margin-top: 3px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

@@ -26,7 +26,6 @@ import {
 import { useConfirm } from '@/hooks/useConfirm';
 import { FUEL_TYPE_OPTIONS, TRANSMISSION_TYPE_OPTIONS } from './types';
 import { useDetailPanel } from './hooks/useVehicleDetail';
-import type { Vehicle } from './types';
 
 // --- VehicleDetailPanel 컴포넌트 props ---
 interface VehicleDetailPanelProps {
@@ -50,12 +49,22 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
   // -----------------------------------------------------------------------
   // 🚀 상세 패널 훅으로부터 상태 및 함수 가져오기
   // -----------------------------------------------------------------------
-  const { selectedItem, openPanel, closePanel, isLoadingDetail, handleUpdateVehicle, handleDeleteVehicle } =
-    useDetailPanel();
+  const {
+    selectedItem,
+    formData,
+    errors,
+    openPanel,
+    closePanel,
+    isLoadingDetail,
+    handleInputChange,
+    initForm,
+    resetForm,
+    handleUpdateVehicle,
+    handleDeleteVehicle,
+  } = useDetailPanel();
 
   // --- UI 모드 및 편집 데이터 상태 관리 ---
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editedVehicle, setEditedVehicle] = useState<Vehicle | null>(null);
 
   // --- useEffect: 패널 열림/닫힘 및 데이터 로딩 제어 ---
   useEffect(() => {
@@ -64,17 +73,17 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
       setIsEditMode(false);
     } else if (!isOpen) {
       closePanel();
-      setEditedVehicle(null);
+      resetForm();
       setIsEditMode(false);
     }
-  }, [isOpen, vehicleId, openPanel, closePanel]);
+  }, [isOpen, vehicleId, openPanel, closePanel, resetForm]);
 
   // --- useEffect: 불러온 상세 정보로 편집 데이터 초기화 ---
   useEffect(() => {
     if (selectedItem) {
-      setEditedVehicle(selectedItem);
+      initForm(selectedItem);
     }
-  }, [selectedItem]);
+  }, [selectedItem, initForm]);
 
   // -----------------------------------------------------------------------
   // 핸들러 함수들
@@ -92,14 +101,14 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
    * 사용자 확인 후 API를 호출하고, 성공 시 패널을 닫습니다.
    */
   const handleDelete = useCallback(async () => {
-    if (!editedVehicle || editedVehicle.id === undefined) {
+    if (!selectedItem || selectedItem.id === undefined) {
       toast.error('삭제할 차량 정보가 유효하지 않습니다.');
       return;
     }
 
     const isConfirmed = await confirm({
       title: '차량 삭제',
-      content: `${editedVehicle.registrationNumber}을(를) 정말 삭제하시겠습니까?`,
+      content: `${selectedItem.registrationNumber}을(를) 정말 삭제하시겠습니까?`,
       confirmText: '삭제',
       cancelText: '취소',
     });
@@ -113,35 +122,30 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
       onSuccessSave?.();
       onClose();
     }
-  }, [editedVehicle, handleDeleteVehicle, onClose, onSuccessSave, confirm]);
+  }, [selectedItem, handleDeleteVehicle, onClose, onSuccessSave, confirm]);
 
   /**
    * '수정' 버튼 클릭 시 차량 정보 수정을 처리합니다.
    * API를 호출하고, 성공 시 편집 모드를 종료하고 패널을 닫습니다.
    */
   const handleSave = useCallback(async () => {
-    if (!editedVehicle) {
-      toast.error('저장할 차량 정보가 유효하지 않습니다.');
-      return;
-    }
-
-    const result = await handleUpdateVehicle(editedVehicle);
+    const result = await handleUpdateVehicle();
     if (result) {
       setIsEditMode(false);
       onSuccessSave?.();
       onClose();
     }
-  }, [editedVehicle, handleUpdateVehicle, onClose, onSuccessSave]);
+  }, [handleUpdateVehicle, onClose, onSuccessSave]);
 
   /**
    * 편집 모드에서 '취소' 버튼 클릭 시 편집 내용을 되돌리고 편집 모드를 종료합니다.
    */
   const handleCancel = useCallback(() => {
     if (selectedItem) {
-      setEditedVehicle(selectedItem);
+      initForm(selectedItem);
     }
     setIsEditMode(false);
-  }, [selectedItem]);
+  }, [selectedItem, initForm]);
 
   /**
    * 슬라이드 패널이 닫힐 때 호출되며, 편집 모드를 초기화하고 패널을 닫습니다.
@@ -150,19 +154,6 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
     setIsEditMode(false);
     onClose();
   }, [onClose]);
-
-  /**
-   * 입력 필드 값이 변경될 때 편집 중인 차량 데이터를 업데이트합니다.
-   */
-  const handleInputChange = useCallback((field: keyof Vehicle, value: string | number) => {
-    setEditedVehicle(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        [field]: value,
-      };
-    });
-  }, []);
 
   /**
    * 차량 상태에 따른 배지 색상을 반환합니다.
@@ -247,7 +238,7 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
       );
     }
 
-    if (!editedVehicle) {
+    if (!selectedItem) {
       return (
         <PanelWrapper style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <Text type="body1">차량 정보를 찾을 수 없습니다.</Text>
@@ -259,8 +250,8 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
       <PanelWrapper>
         <PanelSection>
           <PanelRowSection>
-            <Text type="subheading">{editedVehicle.registrationNumber}</Text>
-            <Badge $badgeColor={getBadgeColor(editedVehicle.status)}>{editedVehicle.statusName}</Badge>
+            <Text type="subheading">{selectedItem.registrationNumber}</Text>
+            <Badge $badgeColor={getBadgeColor(selectedItem.status)}>{selectedItem.statusName}</Badge>
           </PanelRowSection>
         </PanelSection>
 
@@ -269,35 +260,38 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
           <Text type="subheading2">기본 정보</Text>
           {renderPanelRow(
             '제조사',
-            editedVehicle.manufacturer,
+            selectedItem.manufacturer,
             <TextInput
               id="manufacturer"
-              value={editedVehicle.manufacturer}
+              value={formData.manufacturer}
               placeholder="제조사를 입력하세요"
               width="300px"
               onChange={value => handleInputChange('manufacturer', value)}
+              errorText={errors.manufacturer}
             />
           )}
           {renderPanelRow(
             '모델명',
-            editedVehicle.modelName,
+            selectedItem.modelName,
             <TextInput
               id="modelName"
-              value={editedVehicle.modelName}
+              value={formData.modelName}
               placeholder="모델명을 입력하세요"
               width="300px"
               onChange={value => handleInputChange('modelName', value)}
+              errorText={errors.modelName}
             />
           )}
           {renderPanelRow(
             '연식',
-            editedVehicle.modelYear,
+            selectedItem.modelYear,
             <TextInput
               id="modelYear"
-              value={editedVehicle.modelYear}
+              value={formData.modelYear}
               placeholder="연식을 입력하세요"
               width="300px"
               onChange={value => handleInputChange('modelYear', value)}
+              errorText={errors.modelYear}
             />
           )}
         </PanelSection>
@@ -307,37 +301,40 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
           <Text type="subheading2">기술 정보</Text>
           {renderPanelRow(
             '배터리 전력',
-            editedVehicle.batteryVoltage,
+            selectedItem.batteryVoltage,
             <TextInput
               id="batteryVoltage"
-              value={editedVehicle.batteryVoltage ?? ''}
+              value={formData.batteryVoltage ?? ''}
               placeholder="배터리 전력을 입력하세요"
               width="300px"
               onChange={value => handleInputChange('batteryVoltage', value)}
+              errorText={errors.batteryVoltage}
             />
           )}
           {renderPanelRow(
             '연료 유형',
-            editedVehicle.fuelType,
+            selectedItem.fuelType,
             <Dropdown
               id="fuelType"
               options={FUEL_TYPE_OPTIONS}
-              value={editedVehicle.fuelType}
+              value={formData.fuelType}
               placeholder="연료 유형을 선택하세요"
               width="300px"
               onSelect={value => handleInputChange('fuelType', value.toString())}
+              errorText={errors.fuelType}
             />
           )}
           {renderPanelRow(
             '변속기',
-            editedVehicle.transmissionType,
+            selectedItem.transmissionType,
             <Dropdown
               id="transmissionType"
               options={TRANSMISSION_TYPE_OPTIONS}
-              value={editedVehicle.transmissionType}
+              value={formData.transmissionType}
               placeholder="변속기를 선택하세요"
               width="300px"
               onSelect={value => handleInputChange('transmissionType', value.toString())}
+              errorText={errors.transmissionType}
             />
           )}
         </PanelSection>
@@ -359,8 +356,9 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
               label="특이사항"
               placeholder="차량에 대한 특이사항을 입력하세요"
               onChange={value => handleInputChange('memo', value)}
-              value={editedVehicle.memo ?? ''}
+              value={formData.memo ?? ''}
               minHeight="120px"
+              errorText={errors.memo}
             />
           </AnimatedSection>
           <AnimatedSection $isVisible={!isEditMode} $maxHeight="200px">
@@ -369,9 +367,10 @@ export const VehicleDetailPanel: React.FC<VehicleDetailPanelProps> = ({
               label="특이사항"
               placeholder="차량에 대한 특이사항을 입력하세요"
               onChange={value => handleInputChange('memo', value)}
-              value={editedVehicle.memo ?? ''}
+              value={selectedItem.memo ?? ''}
               minHeight="120px"
               disabled
+              errorText={errors.memo}
             />
           </AnimatedSection>
         </PanelSection>

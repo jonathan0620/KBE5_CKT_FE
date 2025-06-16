@@ -1,5 +1,10 @@
+<<<<<<< feat/#14-tracking-marker
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+=======
+import React, { useState, useEffect, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+>>>>>>> main
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -23,11 +28,19 @@ import { Text } from '@/components/ui/text/Text';
 import VehicleCard from './VehicleCard';
 import api from '@/libs/axios';
 
+<<<<<<< feat/#14-tracking-marker
 const customIcon = new L.Icon({
   iconUrl: '/icon/marker.svg',
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
+=======
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+>>>>>>> main
 });
 
 interface Vehicle {
@@ -145,17 +158,26 @@ const RealtimeMonitoringPage: React.FC = () => {
               {filteredVehicles.map((vehicle, idx) => (
                 <VehicleCard
                   key={`${vehicle.vehicleId}-${idx}`}
+<<<<<<< feat/#14-tracking-marker
                   id={vehicle.vehicleId}
                   licensePlate={vehicle.registrationNumber}
                   carInfo={`${vehicle.manufacturer} ${vehicle.modelName} | ${vehicle.customerName}`}
                   onClick={() => handleVehicleClick(vehicle)}
                   isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
+=======
+                  licensePlate={vehicle.registrationNumber}
+                  carInfo={`${vehicle.manufacturer} ${vehicle.modelName} | ${vehicle.customerName}`}
+>>>>>>> main
                 />
               ))}
             </VehicleList>
           </FilterWrap>
           <MapWrap>
+<<<<<<< feat/#14-tracking-marker
             <MapContainer center={[37.5665, 126.978]} zoom={12} style={{ height: '100%', width: '100%' }} ref={mapRef}>
+=======
+            <MapContainer center={[37.5665, 126.978]} zoom={12} style={{ height: '100%', width: '100%' }}>
+>>>>>>> main
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -165,8 +187,13 @@ const RealtimeMonitoringPage: React.FC = () => {
                   const lat = Number(vehicle.lat) / 1000000;
                   const lon = Number(vehicle.lon) / 1000000;
                   return (
+<<<<<<< feat/#14-tracking-marker
                     <Marker key={vehicle.vehicleId} position={[lat, lon]} icon={customIcon}>
                       <Popup closeButton={false}>
+=======
+                    <Marker key={vehicle.vehicleId} position={[lat, lon]}>
+                      <Popup>
+>>>>>>> main
                         <div>
                           <p>차량번호: {vehicle.registrationNumber}</p>
                           <p>

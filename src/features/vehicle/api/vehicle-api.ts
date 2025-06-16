@@ -2,11 +2,13 @@ import api from '@/libs/axios';
 import type {
   RegisterVehicleRequest,
   RegisterVehicleResponse,
+  UpdateVehicleRequest,
+  UpdateVehicleResponse,
   Vehicle,
   VehicleListRequest,
   VehicleListResponse,
 } from '../types';
-import { CODE_SUCCESS, type CommonResponse } from '@/utils/response';
+import { APIError, CODE_SUCCESS, type CommonErrorResponse, type CommonResponse } from '@/utils/response';
 
 // --- API 함수 정의 ---
 
@@ -21,7 +23,7 @@ export const fetchVehicles = async (params: VehicleListRequest): Promise<Vehicle
     params,
   });
   if (response.data.code !== CODE_SUCCESS) {
-    throw new Error(response.data.message);
+    throw new APIError(response.data as CommonErrorResponse);
   }
   return response.data.data;
 };
@@ -36,7 +38,7 @@ export const getVehicleDetail = async (id: number): Promise<Vehicle> => {
   const response = await api.get<CommonResponse<Vehicle>>(`/api/v1/vehicles/${id}`);
 
   if (response.data.code !== CODE_SUCCESS) {
-    throw new Error(response.data.message);
+    throw new APIError(response.data as CommonErrorResponse);
   }
   return response.data.data;
 };
@@ -51,7 +53,7 @@ export const registerVehicle = async (data: RegisterVehicleRequest): Promise<Reg
   const response = await api.post<CommonResponse<RegisterVehicleResponse>>('/api/v1/vehicles', data);
 
   if (response.data.code !== CODE_SUCCESS) {
-    throw new Error(response.data.message || '차량 등록에 실패했습니다.');
+    throw new APIError(response.data as CommonErrorResponse);
   }
 
   return response.data.data;
@@ -64,11 +66,11 @@ export const registerVehicle = async (data: RegisterVehicleRequest): Promise<Reg
  * @returns 수정된 차량 상세 정보
  * @throws API 호출 실패 시 에러
  */
-export const updateVehicle = async (id: number, data: RegisterVehicleRequest): Promise<Vehicle> => {
+export const updateVehicle = async (id: number, data: UpdateVehicleRequest): Promise<UpdateVehicleResponse> => {
   const response = await api.put<CommonResponse<Vehicle>>(`/api/v1/vehicles/${id}`, data);
 
   if (response.data.code !== CODE_SUCCESS) {
-    throw new Error(response.data.message || '차량 수정에 실패했습니다.');
+    throw new APIError(response.data as CommonErrorResponse);
   }
 
   return response.data.data;
