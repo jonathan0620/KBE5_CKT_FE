@@ -4,11 +4,13 @@ import { CardContainer, CardContent, LicensePlateText, CarInfoText } from './Veh
 interface VehicleCardProps {
   licensePlate: string;
   carInfo: string;
+  onClick?: () => void;
+  isSelected?: boolean;
 }
 
-const VehicleCard: React.FC<VehicleCardProps> = ({ licensePlate, carInfo, onClick }) => {
+const VehicleCard: React.FC<VehicleCardProps> = ({ licensePlate, carInfo, onClick, isSelected }) => {
   return (
-    <CardContainer onClick={onClick} style={{ cursor: 'pointer' }}>
+    <CardContainer onClick={onClick} $isSelected={isSelected} style={{ cursor: 'pointer' }}>
       <CardContent>
         <LicensePlateText>{licensePlate}</LicensePlateText>
         <CarInfoText>{carInfo}</CarInfoText>

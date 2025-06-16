@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -49,6 +49,8 @@ const RealtimeMonitoringPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [status, setStatus] = useState({ total: 0, running: 0, stopped: 0 });
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -104,6 +106,15 @@ const RealtimeMonitoringPage: React.FC = () => {
     fetchStatus();
   }, []);
 
+  const handleVehicleClick = useCallback((vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    if (vehicle.lat && vehicle.lon && mapRef.current) {
+      const lat = Number(vehicle.lat) / 1000000;
+      const lon = Number(vehicle.lon) / 1000000;
+      mapRef.current.setView([lat, lon], 15);
+    }
+  }, []);
+
   return (
     <DashboardContainer>
       <HeaderContainer>
@@ -133,14 +144,17 @@ const RealtimeMonitoringPage: React.FC = () => {
               {filteredVehicles.map((vehicle, idx) => (
                 <VehicleCard
                   key={`${vehicle.vehicleId}-${idx}`}
+                  id={vehicle.vehicleId}
                   licensePlate={vehicle.registrationNumber}
                   carInfo={`${vehicle.manufacturer} ${vehicle.modelName} | ${vehicle.customerName}`}
+                  onClick={() => handleVehicleClick(vehicle)}
+                  isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
                 />
               ))}
             </VehicleList>
           </FilterWrap>
           <MapWrap>
-            <MapContainer center={[37.5665, 126.978]} zoom={12} style={{ height: '100%', width: '100%' }}>
+            <MapContainer center={[37.5665, 126.978]} zoom={12} style={{ height: '100%', width: '100%' }} ref={mapRef}>
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

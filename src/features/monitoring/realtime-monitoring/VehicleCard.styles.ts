@@ -1,13 +1,24 @@
 import styled from 'styled-components';
 
-export const CardContainer = styled.div`
+interface CardContainerProps {
+  $isSelected?: boolean;
+}
+
+export const CardContainer = styled.div<CardContainerProps>`
   width: 100%;
   padding: 12px;
   display: flex;
   justify-content: space-between;
   border-radius: 6px;
-  outline: 1px var(--color-gray300) solid;
+  outline: 1px ${props => (props.$isSelected ? 'var(--color-primary)' : 'var(--color-gray300)')} solid;
   outline-offset: -1px;
+  cursor: pointer;
+  background-color: ${props => (props.$isSelected ? 'var(--color-primary-light)' : 'transparent')};
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: ${props => (props.$isSelected ? 'var(--color-primary-light)' : 'var(--color-gray100)')};
+  }
 `;
 
 export const CardHeader = styled.div`
@@ -36,7 +47,7 @@ export const LicensePlateText = styled.span`
 
 export const CarInfoText = styled.span`
   color: var(--color-gray600);
-  font-size: 12px;Add commentMore actions
+  font-size: 12px;
   font-weight: 400;
   line-height: 14.4px;
   word-wrap: break-word;
