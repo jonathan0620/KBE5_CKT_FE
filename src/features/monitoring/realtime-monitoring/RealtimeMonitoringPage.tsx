@@ -3,6 +3,11 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+const COORDINATE_DIVISOR = Number(import.meta.env.VITE_COORDINATE_DIVISOR);
+const DEFAULT_LAT = Number(import.meta.env.VITE_DEFAULT_LAT);
+const DEFAULT_LON = Number(import.meta.env.VITE_DEFAULT_LON);
+const DEFAULT_ZOOM_LEVEL = Number(import.meta.env.VITE_DEFAULT_ZOOM_LEVEL);
+
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 
 import { DashboardContainer } from '@/components/layout/DashboardLayout.styles';
@@ -109,8 +114,8 @@ const RealtimeMonitoringPage: React.FC = () => {
   const handleVehicleClick = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     if (vehicle.lat && vehicle.lon && mapRef.current) {
-      const lat = Number(vehicle.lat) / 1000000;
-      const lon = Number(vehicle.lon) / 1000000;
+      const lat = Number(vehicle.lat) / COORDINATE_DIVISOR;
+      const lon = Number(vehicle.lon) / COORDINATE_DIVISOR;
       mapRef.current.closePopup();
       mapRef.current.setView([lat, lon], 15);
     }
@@ -155,15 +160,20 @@ const RealtimeMonitoringPage: React.FC = () => {
             </VehicleList>
           </FilterWrap>
           <MapWrap>
-            <MapContainer center={[37.5665, 126.978]} zoom={12} style={{ height: '100%', width: '100%' }} ref={mapRef}>
+            <MapContainer
+              center={[DEFAULT_LAT, DEFAULT_LON]}
+              zoom={DEFAULT_ZOOM_LEVEL}
+              style={{ height: '100%', width: '100%' }}
+              ref={mapRef}
+            >
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
               {filteredVehicles.map(vehicle => {
                 if (vehicle.lat && vehicle.lon) {
-                  const lat = Number(vehicle.lat) / 1000000;
-                  const lon = Number(vehicle.lon) / 1000000;
+                  const lat = Number(vehicle.lat) / COORDINATE_DIVISOR;
+                  const lon = Number(vehicle.lon) / COORDINATE_DIVISOR;
                   return (
                     <Marker key={vehicle.vehicleId} position={[lat, lon]} icon={customIcon}>
                       <Popup closeButton={false}>
