@@ -3,10 +3,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-const COORDINATE_DIVISOR = Number(import.meta.env.VITE_COORDINATE_DIVISOR);
-const DEFAULT_LAT = Number(import.meta.env.VITE_DEFAULT_LAT);
-const DEFAULT_LON = Number(import.meta.env.VITE_DEFAULT_LON);
-const DEFAULT_ZOOM_LEVEL = Number(import.meta.env.VITE_DEFAULT_ZOOM_LEVEL);
+const COORDINATE_DIVISOR = 1000000;
+const DEFAULT_LAT = 37.5665;
+const DEFAULT_LON = 126.978;
+const DEFAULT_ZOOM_LEVEL = 12;
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 
