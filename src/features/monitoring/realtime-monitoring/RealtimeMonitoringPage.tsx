@@ -177,13 +177,29 @@ const RealtimeMonitoringPage: React.FC = () => {
                   return (
                     <Marker key={vehicle.vehicleId} position={[lat, lon]} icon={customIcon}>
                       <Popup closeButton={false}>
-                        <div>
-                          <p>차량번호: {vehicle.registrationNumber}</p>
-                          <p>
-                            모델: {vehicle.manufacturer} {vehicle.modelName}
-                          </p>
-                          <p>고객명: {vehicle.customerName}</p>
-                          {vehicle.spd && <p>속도: {vehicle.spd} km/h</p>}
+                        <div style={{ fontFamily: 'sans-serif', minWidth: 150 }}>
+                          <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <img src="/icon/marker.svg" width={14} height={14} alt="icon" />
+                            <span>{vehicle.registrationNumber}</span>
+                          </div>
+                          <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>차량 모델</span>
+                              <span style={{ color: '#111' }}>
+                                {vehicle.manufacturer} {vehicle.modelName}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>고객명</span>
+                              <span style={{ color: '#111' }}>{vehicle.customerName}</span>
+                            </div>
+                            {vehicle.spd && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>현재 속도</span>
+                                <span style={{ color: '#111' }}>{vehicle.spd} km/h</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </Popup>
                     </Marker>
