@@ -1,212 +1,379 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import api from '@/libs/axios';
+import CustomerCreateModal from './CustomerCreateModal.tsx';
 
 import {
   DashboardContainer,
-  FilterContainer,
-  FilterContent,
-  FilterWrap,
-  TableContainer,
   TitleContainer,
+  FilterContainer,
+  FilterWrap,
+  FilterContent,
+  TableContainer,
 } from '@/components/layout/DashboardLayout.styles';
-
-import { Text } from '@/components/ui/text/Text';
-import { IconButton } from '@/components/ui/button/IconButton';
-import { Dropdown } from '@/components/ui/input/dropdown/Dropdown';
+import { StatCard } from '@/components/ui/card/StatCard';
 import { TextInput } from '@/components/ui/input/input/TextInput';
+import { Dropdown } from '@/components/ui/input/dropdown/Dropdown';
+import { BasicButton } from '@/components/ui/button/BasicButton';
+import { Text } from '@/components/ui/text/Text';
 import { BasicTable } from '@/components/ui/table/table/BasicTable';
 import { Pagination } from '@/components/ui/table/pagination/Pagination';
 
-import PlusIcon from '@/assets/icons/ic-plus.svg?react';
-import SearchIcon from '@/assets/icons/ic-search.svg?react';
-import api from '@/libs/axios';
-import { CODE_SUCCESS } from '@/utils/response';
-
-import { useConfirm } from '@/hooks/useConfirm';
-
-interface Customer {
+interface CustomerApiResponse {
   id: number;
-  customerType: string;
   customerName: string;
   phoneNumber: string;
   licenseNumber: string;
   zipCode: string;
   address: string;
   detailAddress: string;
-  birthday: string;
-  status: string; // 예: 'ACTIVE' 등
-  memo: string;
+  birthday: string | null;
+  status: 'ACTIVE' | 'WITHDRAWN';
+  email: string;
+  createdAt: string;
+  customerType: 'INDIVIDUAL' | 'CORPORATE';
 }
 
-const headers = [
-  { label: '번호', key: 'id', width: '60px', align: 'center' },
-  { label: '이름', key: 'customerName', width: '8%', align: 'center' },
-  { label: '생년월일', key: 'birthday', width: '8%', align: 'center' },
-  { label: '연락처', key: 'phoneNumber', width: '15%', align: 'center' },
-  { label: '운전면허번호', key: 'licenseNumber', width: '10%', align: 'center' },
-  { label: '주소', key: 'address', width: '15%', align: 'center' },
-  {
-    label: '상태',
-    key: 'status',
-    type: 'badge',
-    displayKey: 'statusName',
-    valueToBadgeColorMap: {
-      ACTIVE: 'green',
-      WITHDRAWN: 'red',
-      DORMANT: 'gray',
-    },
-    width: '8%',
-    align: 'center',
-  },
-  { label: '비고', key: 'memo', width: 'auto', align: 'center' },
+interface CustomerTableData {
+  id: number;
+  name: string;
+  phone: string;
+  birth: string;
+  address: string;
+  email: string;
+  license: string;
+  joinDate: string;
+  status: '활성' | '비활성';
+  type: '개인' | '법인';
+  index?: number;
+}
+
+const statusMap: Record<string, CustomerTableData['status']> = {
+  ACTIVE: '활성',
+  WITHDRAWN: '비활성',
+};
+
+const statusApiMap = {
+  활성: 'ACTIVE',
+  비활성: 'WITHDRAWN',
+};
+
+const transformCustomerData = (data: CustomerApiResponse): CustomerTableData => ({
+  id: data.id,
+  name: data.customerName,
+  phone: data.phoneNumber,
+  birth: data.birthday || '-',
+  address: data.zipCode ? `${data.address} ${data.detailAddress} (${data.zipCode})` : '-',
+  email: data.email,
+  license: data.licenseNumber,
+  joinDate: data.createdAt.split('T')[0],
+  status: statusMap[data.status] ?? '비활성',
+  type: data.customerType === 'INDIVIDUAL' ? '개인' : '법인',
+});
+
+const HeaderContainer = styled.div`
+  display: flex;
+  gap: 24px;
+  width: 100%;
+`;
+
+const TableHeaderRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+const TabButton = styled.button<{ selected: boolean }>`
+  padding: 8px 16px;
+  border: 1px solid ${({ selected }) => (selected ? 'var(--color-primary)' : 'var(--color-gray300)')};
+  background: ${({ selected }) => (selected ? 'var(--color-primary)' : 'var(--color-white)')};
+  color: ${({ selected }) => (selected ? 'var(--color-white)' : 'var(--color-gray800)')};
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:not(:last-child) {
+    margin-right: 8px;
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+`;
+
+const PageArrowButton = styled.button`
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid var(--color-gray300);
+  background: var(--color-white);
+  color: var(--color-gray600);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--color-primaryLight);
+  }
+`;
+
+const STATUS_OPTIONS = [
+  { label: '전체', value: '전체' },
+  { label: '활성', value: '활성' },
+  { label: '비활성', value: '비활성' },
 ];
 
-const RENTAL_STATUS_OPTIONS = [
-  { label: '전체', value: '' },
-  { label: 'ACTIVE', value: 'ACTIVE' },
-  { label: 'INACTIVE', value: 'INACTIVE' },
+const statusBadgeMap = {
+  활성: 'primary',
+  비활성: 'gray',
+};
+
+const personalTableHeaders = [
+  { label: '번호', key: 'index', width: '60px' },
+  { label: '이름', key: 'name', width: '100px' },
+  { label: '연락처', key: 'phone', width: '130px' },
+  { label: '생년월일', key: 'birth', width: '110px' },
+  { label: '이메일', key: 'email', width: 'flex', minWidth: '180px' },
+  { label: '운전면허번호', key: 'license', width: '160px' },
+  { label: '가입일자', key: 'joinDate', width: '110px' },
+  { label: '회원 상태', key: 'status', width: '110px', type: 'badge', valueToBadgeColorMap: statusBadgeMap },
+];
+
+const corporateTableHeaders = [
+  { label: '번호', key: 'index', width: '60px' },
+  { label: '이름', key: 'name', width: '120px' },
+  { label: '연락처', key: 'phone', width: '130px' },
+  { label: '이메일', key: 'email', width: '200px' },
+  { label: '주소', key: 'address', width: 'flex', minWidth: '200px' },
+  { label: '운전면허번호', key: 'license', width: '160px' },
+  { label: '가입일자', key: 'joinDate', width: '110px' },
+  { label: '회원 상태', key: 'status', width: '110px', type: 'badge', valueToBadgeColorMap: statusBadgeMap },
 ];
 
 const ITEMS_PER_PAGE = 10;
 
-const CustomerManagementPage: React.FC = () => {
-  const { confirm } = useConfirm();
+const CustomerListPage: React.FC = () => {
+  const navigate = useNavigate();
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [filterStatus, setFilterStatus] = useState('');
-  const [keyword, setKeyword] = useState('');
+  const [type, setType] = useState<'개인' | '법인'>('개인');
+  const [filters, setFilters] = useState({ status: '전체', keyword: '' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [customers, setCustomers] = useState<CustomerTableData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [summary, setSummary] = useState({ total: 0, individual: 0, corporate: 0, renting: 0 });
 
-  // 서버에서 페이지네이션, 필터링 적용하여 데이터 요청
-  const fetchCustomers = useCallback(async (page: number, status: string, keyword: string) => {
-    setLoading(true);
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const response = await api.get('/api/v1/customers/summary');
+        setSummary(response.data.data);
+      } catch (err) {
+        console.error('고객 요약 정보 조회 실패:', err);
+      }
+    };
+    fetchSummary();
+  }, []);
+
+  const fetchCustomers = useCallback(async () => {
+    setIsLoading(true);
     setError(null);
-
     try {
       const response = await api.get('/api/v1/customers', {
         params: {
-          page: page - 1, // 0-based page index
-          size: ITEMS_PER_PAGE,
-          status: status || undefined,
-          keyword: keyword || undefined,
+          size: 1000,
+          sort: 'createdAt,DESC',
+          status: filters.status !== '전체' ? statusApiMap[filters.status as keyof typeof statusApiMap] : undefined,
+          keyword: filters.keyword || undefined,
         },
       });
-
-      if (response.data.code !== CODE_SUCCESS) {
-        throw new Error(response.data.message);
+      const customerList = response.data?.data?.list;
+      if (customerList && Array.isArray(customerList)) {
+        setCustomers(
+          customerList.map(transformCustomerData).map((data, idx) => ({
+            ...data,
+            index: customerList.length - idx,
+          }))
+        );
+      } else {
+        setCustomers([]);
       }
-
-      const data = response.data.data;
-      setCustomers(data.list);
-      setTotalPages(data.totalPages);
     } catch (err) {
-      setError((err as Error).message);
+      setError(err as Error);
+      setCustomers([]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
-    fetchCustomers(currentPage, filterStatus, keyword);
-  }, [currentPage, filterStatus, keyword, fetchCustomers]);
+    fetchCustomers();
+  }, [fetchCustomers]);
 
-  // 필터 상태 선택 시 페이지 1로 초기화
+  const handleTypeSelect = useCallback((value: '개인' | '법인') => {
+    setType(value);
+    setCurrentPage(1);
+    setFilters({ status: '전체', keyword: '' });
+  }, []);
+
   const handleStatusSelect = useCallback((value: string | number) => {
-    setFilterStatus(String(value));
+    setFilters(f => ({ ...f, status: String(value) }));
     setCurrentPage(1);
   }, []);
 
-  // 검색어 변경 시 상태 업데이트
   const handleKeywordChange = useCallback((value: string) => {
-    setKeyword(value);
+    setFilters(f => ({ ...f, keyword: value }));
   }, []);
 
-  // 검색 버튼 클릭 시 페이지 1로 초기화
   const handleSearchClick = useCallback(() => {
     setCurrentPage(1);
   }, []);
 
-  // 페이지 변경 핸들러
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
+  const handlePageChange = useCallback((p: number) => {
+    setCurrentPage(p);
   }, []);
 
-  // 등록 버튼 클릭 핸들러
-  const handleResgister = useCallback(async () => {
-    await confirm({
-      title: '현재 기능이 구현되지 않았습니다.',
-      content: `담당자(송하경님)께 문의부탁드립니다.`,
-      confirmText: '갈구기',
-      cancelText: '문의',
-    });
-  }, []);
+  const filteredData = useMemo(() => {
+    const data = customers
+      .filter(c => c.type === type)
+      .filter(
+        c =>
+          (filters.status === '전체' || c.status === filters.status) &&
+          (filters.keyword === '' ||
+            c.name.includes(filters.keyword) ||
+            c.phone.includes(filters.keyword) ||
+            c.email.includes(filters.keyword))
+      );
+    console.log(`[데이터 필터링] 타입: ${type}, 필터 후 데이터 수: ${data.length}`);
+    return data;
+  }, [customers, type, filters]);
+
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  console.log(
+    `[페이지네이션] 아이템 수: ${filteredData.length}, 페이지 당 아이템: ${ITEMS_PER_PAGE}, 총 페이지: ${totalPages}`
+  );
+  const pagedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const tableHeaders = type === '개인' ? personalTableHeaders : corporateTableHeaders;
+
+  const tableMessage = isLoading
+    ? '데이터를 불러오는 중입니다...'
+    : error
+      ? '데이터 로딩에 실패했습니다.'
+      : '표시할 데이터가 없습니다.';
 
   return (
     <DashboardContainer>
       <TitleContainer>
         <Text type="heading">사용자 관리</Text>
-        <IconButton icon={<PlusIcon />} onClick={handleResgister}>
-          사용자 추가
-        </IconButton>
+        <BasicButton color="primary" onClick={() => setIsCreateModalOpen(true)}>
+          + 사용자 추가
+        </BasicButton>
       </TitleContainer>
+
+      <HeaderContainer>
+        <StatCard label="총 고객 수" count={summary.total} unit="명" unitColor="blue" />
+        <StatCard label="개인 고객" count={summary.individual} unit="명" unitColor="green" />
+        <StatCard label="법인 고객" count={summary.corporate} unit="명" unitColor="yellow" />
+        <StatCard label="현재 대여 중" count={summary.renting} unit="명" unitColor="red" />
+      </HeaderContainer>
 
       <FilterContainer>
         <Text type="subheading2">고객 검색</Text>
         <FilterWrap>
           <FilterContent>
             <Dropdown
-              width="180px"
-              id="rental-status"
-              label="상태"
-              options={RENTAL_STATUS_OPTIONS}
-              value={filterStatus}
+              width="120px"
+              id="status"
+              label="회원 상태"
+              options={STATUS_OPTIONS}
+              value={filters.status}
               onSelect={handleStatusSelect}
             />
             <TextInput
-              width="300px"
+              width="220px"
               type="text"
-              id="customer-search"
+              id="keyword-input"
               label="검색어"
-              placeholder="이름, 연락처, 메모 검색"
-              icon={<SearchIcon />}
-              value={keyword}
+              placeholder="이름, 연락처, 이메일"
+              value={filters.keyword}
               onChange={handleKeywordChange}
               onEnter={handleSearchClick}
             />
           </FilterContent>
-          <IconButton icon={<SearchIcon />} onClick={handleSearchClick}>
-            검색
-          </IconButton>
+          <BasicButton onClick={handleSearchClick}>검색</BasicButton>
         </FilterWrap>
       </FilterContainer>
 
       <TableContainer>
-        <Text type="subheading2">고객 목록</Text>
-
-        {loading && <Text>로딩 중...</Text>}
-        {error && <Text type="error">에러 발생: {error}</Text>}
-        {!loading && !error && (
-          <>
-            <BasicTable<Customer>
-              tableHeaders={headers}
-              data={customers}
-              message={customers.length === 0 ? '검색 결과가 없습니다.' : ''}
-            />
-
+        <TableHeaderRow>
+          <Text type="subheading2">고객 목록</Text>
+          <div>
+            <TabButton selected={type === '개인'} onClick={() => handleTypeSelect('개인')}>
+              개인
+            </TabButton>
+            <TabButton selected={type === '법인'} onClick={() => handleTypeSelect('법인')}>
+              법인
+            </TabButton>
+          </div>
+        </TableHeaderRow>
+        <BasicTable<CustomerTableData>
+          tableHeaders={tableHeaders}
+          data={pagedData}
+          message={tableMessage}
+          onRowClick={row => {
+            console.log('클릭한 row:', row);
+            console.log('상태', row.status);
+            navigate(`/customers/${row.id}`);
+          }}
+        />
+        {totalPages > 1 && (
+          <PaginationContainer>
+            <PageArrowButton disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>
+              {'<'}
+            </PageArrowButton>
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
-              pageBlockSize={10}
+              pageBlockSize={5}
             />
-          </>
+            <PageArrowButton disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)}>
+              {'>'}
+            </PageArrowButton>
+          </PaginationContainer>
         )}
       </TableContainer>
+      {isCreateModalOpen && (
+        <CustomerCreateModal
+          key={type}
+          type={type}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={fetchCustomers}
+        />
+      )}
     </DashboardContainer>
   );
 };
 
-export default CustomerManagementPage;
+export default CustomerListPage;
