@@ -43,7 +43,6 @@ interface Vehicle {
   lat: string | null;
   lon: string | null;
   ang: string | null;
-  spd: string | null;
 }
 
 const VEHICLE_REFRESH_INTERVAL = Number(import.meta.env.VITE_VEHICLE_REFRESH_INTERVAL || 60000);
@@ -192,12 +191,6 @@ const RealtimeMonitoringPage: React.FC = () => {
                               <span>고객명</span>
                               <span style={{ color: '#111' }}>{vehicle.customerName}</span>
                             </div>
-                            {vehicle.spd && (
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>현재 속도</span>
-                                <span style={{ color: '#111' }}>{vehicle.spd} km/h</span>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </Popup>
