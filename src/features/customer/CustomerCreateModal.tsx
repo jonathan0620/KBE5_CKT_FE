@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 
 interface Props {
-  type: '개인' | '법인';
+  type: 'INDIVIDUAL' | 'CORPORATE';
   onClose: () => void;
   onSuccess: () => void;
 }
 
 const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSuccess }) => {
-  const [type, setType] = useState<'개인 고객' | '법인 고객'>(initialType === '개인' ? '개인 고객' : '법인 고객');
+  const [type, setType] = useState<'INDIVIDUAL' | 'CORPORATE'>(initialType);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -25,7 +25,7 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
   });
 
   useEffect(() => {
-    setType(initialType === '개인' ? '개인 고객' : '법인 고객');
+    setType(initialType);
     setForm({
       name: '',
       phone: '',
@@ -54,7 +54,7 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
 
     try {
       const payload =
-        type === '개인 고객'
+        type === 'INDIVIDUAL'
           ? {
               customerType: 'INDIVIDUAL',
               customerName: form.name,
@@ -102,18 +102,18 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
           <Label>고객 유형</Label>
           <RadioGroup>
             <label>
-              <input type="radio" checked={type === '개인 고객'} onChange={() => setType('개인 고객')} />
+              <input type="radio" checked={type === 'INDIVIDUAL'} onChange={() => setType('INDIVIDUAL')} />
               개인 고객
             </label>
             <label>
-              <input type="radio" checked={type === '법인 고객'} onChange={() => setType('법인 고객')} />
+              <input type="radio" checked={type === 'CORPORATE'} onChange={() => setType('CORPORATE')} />
               법인 고객
             </label>
           </RadioGroup>
         </Section>
 
         <FormGrid>
-          {type === '개인 고객' ? (
+          {type === 'INDIVIDUAL' ? (
             <>
               {/* 개인 필드 */}
               <InputField>
@@ -225,7 +225,7 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
         </FormGrid>
 
         <ButtonGroup>
-          <BasicButton $buttonType="gray" onClick={onClose}>
+          <BasicButton buttonType="gray" onClick={onClose}>
             취소
           </BasicButton>
           <BasicButton onClick={handleSubmit}>등록</BasicButton>
