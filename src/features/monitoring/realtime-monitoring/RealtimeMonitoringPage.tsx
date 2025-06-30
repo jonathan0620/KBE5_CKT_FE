@@ -28,6 +28,8 @@ import { Text } from '@/components/ui/text/Text';
 import VehicleCard from './VehicleCard';
 import api from '@/libs/axios';
 
+import { useSse } from './useSse';
+
 const customIcon = new L.Icon({
   iconUrl: '/icon/marker.svg',
   iconSize: [32, 32],
@@ -56,6 +58,15 @@ const RealtimeMonitoringPage: React.FC = () => {
   const [status, setStatus] = useState({ total: 0, running: 0, stopped: 0 });
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+
+  const handleGpsUpdate = useCallback(data => {
+    // 받은 데이터(lat, lon 등)를 상태에 업데이트
+    console.log('sse > ', data);
+  }, []);
+
+  // useSse 훅을 사용하여 SSE 연결 관리
+  // onMessage 콜백 함수를 useSse의 의존성 배열에 넣어야 함
+  useSse('gps-update', handleGpsUpdate);
 
   const handleSearchChange = useCallback(
     (value: string) => {
