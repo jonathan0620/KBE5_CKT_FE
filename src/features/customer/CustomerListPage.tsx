@@ -45,7 +45,7 @@ interface CustomerTableData {
   license: string;
   joinDate: string;
   status: '활성' | '비활성';
-  type: '개인' | '법인';
+  type: 'INDIVIDUAL' | 'CORPORATE';
   index?: number;
 }
 
@@ -69,7 +69,7 @@ const transformCustomerData = (data: CustomerApiResponse): CustomerTableData => 
   license: data.licenseNumber,
   joinDate: data.createdAt.split('T')[0],
   status: statusMap[data.status] ?? '비활성',
-  type: data.customerType === 'INDIVIDUAL' ? '개인' : '법인',
+  type: data.customerType,
 });
 
 const HeaderContainer = styled.div`
@@ -175,7 +175,7 @@ const ITEMS_PER_PAGE = 10;
 const CustomerListPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [type, setType] = useState<'개인' | '법인'>('개인');
+  const [type, setType] = useState<'INDIVIDUAL' | 'CORPORATE'>('INDIVIDUAL');
   const [filters, setFilters] = useState({ status: '전체', keyword: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [customers, setCustomers] = useState<CustomerTableData[]>([]);
@@ -231,7 +231,7 @@ const CustomerListPage: React.FC = () => {
     fetchCustomers();
   }, [fetchCustomers]);
 
-  const handleTypeSelect = useCallback((value: '개인' | '법인') => {
+  const handleTypeSelect = useCallback((value: 'INDIVIDUAL' | 'CORPORATE') => {
     setType(value);
     setCurrentPage(1);
     setFilters({ status: '전체', keyword: '' });
@@ -270,11 +270,8 @@ const CustomerListPage: React.FC = () => {
   }, [customers, type, filters]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  console.log(
-    `[페이지네이션] 아이템 수: ${filteredData.length}, 페이지 당 아이템: ${ITEMS_PER_PAGE}, 총 페이지: ${totalPages}`
-  );
   const pagedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-  const tableHeaders = type === '개인' ? personalTableHeaders : corporateTableHeaders;
+  const tableHeaders = type === 'INDIVIDUAL' ? personalTableHeaders : corporateTableHeaders;
 
   const tableMessage = isLoading
     ? '데이터를 불러오는 중입니다...'
@@ -329,10 +326,10 @@ const CustomerListPage: React.FC = () => {
         <TableHeaderRow>
           <Text type="subheading2">고객 목록</Text>
           <div>
-            <TabButton selected={type === '개인'} onClick={() => handleTypeSelect('개인')}>
+            <TabButton selected={type === 'INDIVIDUAL'} onClick={() => handleTypeSelect('INDIVIDUAL')}>
               개인
             </TabButton>
-            <TabButton selected={type === '법인'} onClick={() => handleTypeSelect('법인')}>
+            <TabButton selected={type === 'CORPORATE'} onClick={() => handleTypeSelect('CORPORATE')}>
               법인
             </TabButton>
           </div>
