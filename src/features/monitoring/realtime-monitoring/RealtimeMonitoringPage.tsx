@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-const COORDINATE_DIVISOR = 1000000;
 const DEFAULT_LAT = 37.5665;
 const DEFAULT_LON = 126.978;
 const DEFAULT_ZOOM_LEVEL = 12;
@@ -114,8 +113,8 @@ const RealtimeMonitoringPage: React.FC = () => {
   const handleVehicleClick = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     if (vehicle.lat && vehicle.lon && mapRef.current) {
-      const lat = Number(vehicle.lat) / COORDINATE_DIVISOR;
-      const lon = Number(vehicle.lon) / COORDINATE_DIVISOR;
+      const lat = Number(vehicle.lat);
+      const lon = Number(vehicle.lon);
       mapRef.current.closePopup();
       mapRef.current.setView([lat, lon], 15);
     }
@@ -172,8 +171,8 @@ const RealtimeMonitoringPage: React.FC = () => {
               />
               {filteredVehicles.map(vehicle => {
                 if (vehicle.lat && vehicle.lon) {
-                  const lat = Number(vehicle.lat) / COORDINATE_DIVISOR;
-                  const lon = Number(vehicle.lon) / COORDINATE_DIVISOR;
+                  const lat = Number(vehicle.lat);
+                  const lon = Number(vehicle.lon);
                   return (
                     <Marker key={vehicle.vehicleId} position={[lat, lon]} icon={customIcon}>
                       <Popup closeButton={false}>
