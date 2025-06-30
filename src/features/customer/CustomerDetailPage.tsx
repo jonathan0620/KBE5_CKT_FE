@@ -12,6 +12,7 @@ const CustomerDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [form, setForm] = useState<any | null>(null);
+  const [rentalInfo, setRentalInfo] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -25,6 +26,19 @@ const CustomerDetailPage: React.FC = () => {
       }
     };
     fetchCustomer();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchRentalInfo = async () => {
+      try {
+        const res = await api.get(`/api/v1/customers/${id}/rentals`);
+        setRentalInfo(res.data?.data);
+      } catch (e) {
+        setRentalInfo(null);
+      }
+    };
+    fetchRentalInfo();
   }, [id]);
 
   useEffect(() => {
@@ -127,12 +141,12 @@ const CustomerDetailPage: React.FC = () => {
                   </FieldItem>
                 </FieldGroup>
 
-                <ButtonRow>
+                <BottomButtonRow>
                   <BasicButton color="primary" onClick={handleConfirm}>
                     확인
                   </BasicButton>
                   <BasicButton onClick={() => setIsEditMode(false)}>취소</BasicButton>
-                </ButtonRow>
+                </BottomButtonRow>
               </>
             ) : (
               <>
@@ -160,12 +174,12 @@ const CustomerDetailPage: React.FC = () => {
                   <FieldLabel>가입일</FieldLabel>
                   <FieldValue>{customer.createdAt?.split('T')[0]}</FieldValue>
                 </DetailField>
-                <ButtonRow>
+                <BottomButtonRow>
                   <BasicButton onClick={() => setIsEditMode(true)}>수정</BasicButton>
                   <BasicButton buttonType="gray" onClick={handleDelete}>
                     삭제
                   </BasicButton>
-                </ButtonRow>
+                </BottomButtonRow>
               </>
             )
           ) : (
@@ -175,38 +189,37 @@ const CustomerDetailPage: React.FC = () => {
 
         <RightColumn>
           <HeaderContainer>
-            <StatCard label="총 대여 횟수" count={12} unit="건" unitColor="blue" />
-            <StatCard label="현재 대여 중" count={1} unit="건" unitColor="red" />
+            <StatCard label="총 대여 횟수" count={rentalInfo?.totalCount ?? 0} unit="건" unitColor="blue" />
+            <StatCard label="현재 대여 중" count={rentalInfo?.activeCount ?? 0} unit="건" unitColor="red" />
           </HeaderContainer>
 
           <CurrentRentalBox>
             <SectionTitle>현재 대여 정보</SectionTitle>
-            <RentalInfoRow>
-              <CarIcon>🚐</CarIcon>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 18 }}>
-                  아반떼 <span style={{ color: '#888', fontWeight: 400, fontSize: 15 }}>12가 3456</span>
+            {rentalInfo?.currentRental ? (
+              <RentalInfoRow>
+                <CarIcon>🚐</CarIcon>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 18 }}>
+                    {rentalInfo.currentRental.vehicleName}{' '}
+                    <span style={{ color: '#888', fontWeight: 400, fontSize: 15 }}>
+                      {rentalInfo.currentRental.licensePlate}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <span>
+                      📅 {rentalInfo.currentRental.startDate} ~ {rentalInfo.currentRental.endDate}
+                    </span>
+                    <RentalStatus>{rentalInfo.currentRental.status}</RentalStatus>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <span>📅 2023-10-15 ~ 2023-10-18</span>
-                  <RentalStatus>진행중</RentalStatus>
-                </div>
-              </div>
-              <div style={{ marginLeft: 'auto' }}>
-                <a href="#" style={{ color: '#2563eb', fontWeight: 500 }}>
-                  상세 보기 &gt;
-                </a>
-              </div>
-            </RentalInfoRow>
+              </RentalInfoRow>
+            ) : (
+              <div style={{ color: '#888', fontSize: 15 }}>현재 대여 중인 차량이 없습니다.</div>
+            )}
           </CurrentRentalBox>
 
           <HistoryBox>
-            <SectionTitle>
-              대여 이력{' '}
-              <span style={{ float: 'right', color: '#2563eb', fontWeight: 500, fontSize: 15, cursor: 'pointer' }}>
-                전체 보기 &gt;
-              </span>
-            </SectionTitle>
+            <SectionTitle>대여 이력</SectionTitle>
             <HistoryTable>
               <thead>
                 <tr>
@@ -218,33 +231,42 @@ const CustomerDetailPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>R-10025</td>
-                  <td>아반떼</td>
-                  <td>2023-10-15</td>
-                  <td>2023-10-18</td>
-                  <td>
-                    <RentalStatus>진행중</RentalStatus>
-                  </td>
-                </tr>
-                <tr>
-                  <td>R-9876</td>
-                  <td>투싼</td>
-                  <td>2023-09-10</td>
-                  <td>2023-09-15</td>
-                  <td>
-                    <RentalStatus status="done">완료</RentalStatus>
-                  </td>
-                </tr>
-                <tr>
-                  <td>R-8765</td>
-                  <td>아반떼</td>
-                  <td>2023-08-05</td>
-                  <td>2023-08-08</td>
-                  <td>
-                    <RentalStatus status="done">완료</RentalStatus>
-                  </td>
-                </tr>
+                {rentalInfo?.rentalHistory && rentalInfo.rentalHistory.length > 0 ? (
+                  [...rentalInfo.rentalHistory]
+                    .sort((a, b) => {
+                      const dateA = new Date(a.startDate).getTime();
+                      const dateB = new Date(b.startDate).getTime();
+
+                      // 예약 중이면 가장 위로 정렬
+                      const isReservedA = a.status === '예약 중' ? 1 : 0;
+                      const isReservedB = b.status === '예약 중' ? 1 : 0;
+
+                      if (isReservedA !== isReservedB) {
+                        return isReservedB - isReservedA; // 예약중은 위로 정렬
+                      }
+
+                      return dateB - dateA; // 그 외는 최신순 정렬
+                    })
+                    .map((item: any) => (
+                      <tr key={item.reservationId}>
+                        <td>{item.reservationId}</td>
+                        <td>{item.vehicleName}</td>
+                        <td>{item.startDate}</td>
+                        <td>{item.endDate}</td>
+                        <td>
+                          <RentalStatus status={item.status === '완료' ? 'done' : undefined}>
+                            {item.status}
+                          </RentalStatus>
+                        </td>
+                      </tr>
+                    ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} style={{ color: '#888', fontSize: 15 }}>
+                      대여 이력이 없습니다.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </HistoryTable>
           </HistoryBox>
@@ -367,6 +389,17 @@ const HistoryTable = styled.table`
     background: #f9fafb;
     font-weight: 600;
   }
+  tbody {
+    display: block;
+    max-height: 115px;
+    overflow-y: auto;
+  }
+  thead,
+  tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
 `;
 
 const HeaderContainer = styled.div`
@@ -429,4 +462,11 @@ const StatusBadge = styled.div<{ active: boolean }>`
   transition:
     background 0.15s,
     color 0.15s;
+`;
+
+const BottomButtonRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 32px;
 `;
