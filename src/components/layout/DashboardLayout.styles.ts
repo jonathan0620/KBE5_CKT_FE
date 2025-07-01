@@ -52,6 +52,8 @@ export const TableContainer = styled.section`
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-height: 400px;
+  overflow-y: auto;
 `;
 
 export const TableTitle = styled.div`

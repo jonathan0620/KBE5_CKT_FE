@@ -19,6 +19,7 @@ import { TextInput } from '@/components/ui/input/input/TextInput';
 import { BasicTable } from '@/components/ui/table/table/BasicTable';
 import { DateInput } from '@/components/ui/input/date/DateInput';
 import api from '@/libs/axios';
+import { formatCommas } from '@/utils/common';
 
 const VEHICLE_OPTIONS = [{ label: '전체', value: '' }];
 
@@ -87,7 +88,6 @@ const DrivingHistoryPage: React.FC = () => {
   const [startDate, setStartDate] = useState<Date>(defaultDateRange.startDate);
   const [endDate, setEndDate] = useState<Date>(defaultDateRange.endDate);
   const [vehicleNumber, setVehicleNumber] = useState<string>('');
-  const [driverKeyword, setDriverKeyword] = useState<string>('');
   const [vehicleOptions, setVehicleOptions] = useState(VEHICLE_OPTIONS);
 
   const [vehicleLogData, setVehicleLogData] = useState<any[]>([]);
@@ -129,6 +129,10 @@ const DrivingHistoryPage: React.FC = () => {
       return;
     }
 
+    setSelectedVehicleData(null);
+    setWeeklyLogData([]);
+    setDailyLogData([]);
+
     try {
       setIsLoading(true);
       setError('');
@@ -142,7 +146,6 @@ const DrivingHistoryPage: React.FC = () => {
         from: from.toISOString(),
         to: to.toISOString(),
         ...(registrationNumber && { registrationNumber }),
-        ...(driverKeyword && { driverName: driverKeyword }),
       };
       setLastQueryParams(params);
       const response = await api.get('/api/v1/logs/summary', { params });
@@ -156,8 +159,8 @@ const DrivingHistoryPage: React.FC = () => {
             vehicleNumber: item.registrationNumber || '-',
             companyName: item.companyName || '-',
             drivingDays: item.drivingDays || 0,
-            totalDistance: item.totalDistance || 0,
-            averageDistance: item.averageDistance ? Math.round(item.averageDistance) : 0,
+            totalDistance: (formatCommas(item.totalDistance || 0) ?? '0') + ' km',
+            averageDistance: (formatCommas(item.averageDistance ? Math.round(item.averageDistance) : 0) ?? '0') + ' km',
             averageDrivingTime: avgTime,
             drivingRate: calculateDrivingRate(item.drivingDays || 0, from.toISOString(), to.toISOString()),
           };
@@ -183,16 +186,31 @@ const DrivingHistoryPage: React.FC = () => {
   };
 
   const handleExcelDownload = async () => {
-    if (!lastQueryParams) return;
+    if (!startDate || !endDate || !selectedVehicleData?.vehicleNumber) {
+      alert('엑셀 다운로드를 위해 차량을 선택해주세요.');
+      return;
+    }
+
+    const from = new Date(startDate);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(endDate);
+    to.setHours(23, 59, 59, 999);
+
+    const registrationNumber = selectedVehicleData.vehicleNumber;
+
     try {
       const response = await api.get('/api/v1/logs/summary/excel', {
-        params: lastQueryParams,
+        params: {
+          from: from.toISOString(),
+          to: to.toISOString(),
+          registrationNumber,
+        },
         responseType: 'blob',
       });
 
       const now = new Date();
       const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14);
-      const fileName = `운행기록부_${timestamp}.xlsx`;
+      const fileName = `운행기록부_${registrationNumber}_${timestamp}.xlsx`;
 
       const url = window.URL.createObjectURL(response.data);
       const link = document.createElement('a');
@@ -232,7 +250,7 @@ const DrivingHistoryPage: React.FC = () => {
         const weeklyData = response.data.map((item: any) => ({
           id: item.weekNumber,
           period: `${item.weekStartDate} ~ ${item.weekEndDate}`,
-          totalDistance: item.totalDistance,
+          totalDistance: (formatCommas(item.totalDistance || 0) ?? '0') + ' km',
           totalTime: item.totalDrivingTime,
           daysCount: item.drivingDays,
           registrationNumber: data.vehicleNumber,
@@ -284,7 +302,7 @@ const DrivingHistoryPage: React.FC = () => {
             id: item.driveDate,
             date: item.driveDate,
             dayOfWeek,
-            totalDistance: item.totalDistance,
+            totalDistance: (formatCommas(item.totalDistance || 0) ?? '0') + ' km',
             totalTime: item.totalDrivingTime,
           };
         });
@@ -336,18 +354,6 @@ const DrivingHistoryPage: React.FC = () => {
               value={vehicleNumber}
               onSelect={value => setVehicleNumber(String(value))}
             />
-
-            <TextInput
-              width="300px"
-              type="text"
-              id="driver-search"
-              label="검색"
-              placeholder="운전자명 검색"
-              icon={<SearchIcon />}
-              value={driverKeyword}
-              onChange={value => setDriverKeyword(value)}
-              onEnter={fetchVehicleLogs}
-            />
           </FilterContent>
 
           <IconButton icon={<SearchIcon />} onClick={fetchVehicleLogs}>
@@ -367,13 +373,13 @@ const DrivingHistoryPage: React.FC = () => {
               gap: 4,
               background: 'none',
               border: 'none',
-              cursor: 'pointer',
-              color: '#22B14C',
+              cursor: selectedVehicleData && weeklyLogData.length ? 'pointer' : 'not-allowed',
+              color: selectedVehicleData && weeklyLogData.length ? '#22B14C' : '#9CA3AF',
               fontWeight: 700,
               fontSize: 15,
             }}
             onClick={handleExcelDownload}
-            disabled={!vehicleLogData.length}
+            disabled={!selectedVehicleData}
           >
             엑셀 다운로드
           </button>
