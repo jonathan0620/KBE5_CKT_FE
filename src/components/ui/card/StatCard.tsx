@@ -1,5 +1,6 @@
 import { StatCardContainer, LabelText, CountFrame, CountNumber, CountUnit } from './StatCard.styles';
 import type { StatCardProps } from './type';
+import { formatCommas } from '@/utils/common';
 
 /**
  * 특정 항목의 통계(총 개수 등)를 표시하는 재사용 가능한 카드 컴포넌트입니다.
@@ -11,7 +12,7 @@ export const StatCard = ({ label, count, unit, countColor = 'default', unitColor
     <StatCardContainer>
       <LabelText>{label}</LabelText>
       <CountFrame>
-        <CountNumber $countColor={countColor}>{count}</CountNumber>
+        <CountNumber $countColor={countColor}>{formatCommas(count)}</CountNumber>
         <CountUnit $unitColor={unitColor}>{unit}</CountUnit>
       </CountFrame>
     </StatCardContainer>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -11,7 +11,6 @@ import SearchIcon from '@/assets/icons/ic-search.svg?react';
 
 import { DashboardContainer } from '@/components/layout/DashboardLayout.styles';
 import { StatCard } from '@/components/ui/card/StatCard';
-import { BasicButton } from '@/components/ui/button/BasicButton';
 import { TextInput } from '@/components/ui/input/input/TextInput';
 
 import {
@@ -20,7 +19,6 @@ import {
   FilterWrap,
   HeaderContainer,
   MapWrap,
-  TitleWrap,
   VehicleList,
 } from './RealtimeMonitoringPage.styles';
 import { Text } from '@/components/ui/text/Text';
@@ -56,14 +54,6 @@ const RealtimeMonitoringPage: React.FC = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearch(value);
-      setFilteredVehicles(filterVehicles(value));
-    },
-    [vehicles]
-  );
-
   const filterVehicles = useCallback(
     (value: string) => {
       if (value.length === 0) {
@@ -74,12 +64,23 @@ const RealtimeMonitoringPage: React.FC = () => {
     [vehicles]
   );
 
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      setFilteredVehicles(filterVehicles(value));
+    },
+    [vehicles, filterVehicles]
+  );
+
   const fetchVehicles = useCallback(async () => {
     try {
       const response = await api.get('/api/v1/tracking/vehicles/location');
       if (response.data.code === '000' && Array.isArray(response.data.data)) {
         setVehicles(response.data.data);
         setFilteredVehicles(response.data.data);
+
+        const runningCount = (response.data.data ?? []).length;
+        setStatus({ total: status.total, running: runningCount, stopped: status.total - runningCount });
       } else {
         setVehicles([]);
       }
@@ -96,6 +97,7 @@ const RealtimeMonitoringPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchVehicles]);
 
+  // 차량 상태 주기적 업데이트
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -108,6 +110,8 @@ const RealtimeMonitoringPage: React.FC = () => {
       }
     };
     fetchStatus();
+    const interval = setInterval(fetchStatus, VEHICLE_REFRESH_INTERVAL);
+    return () => clearInterval(interval);
   }, []);
 
   const handleVehicleClick = useCallback((vehicle: Vehicle) => {
@@ -126,14 +130,9 @@ const RealtimeMonitoringPage: React.FC = () => {
         <StatCard label="전체 차량" count={status.total} unit="대" unitColor="blue" />
         <StatCard label="운행중 차량" count={status.running} unit="대" unitColor="green" />
         <StatCard label="미운행 차량" count={status.stopped} unit="대" unitColor="yellow" />
-        <StatCard label="미관제 차량" count={12} unit="대" unitColor="red" />
       </HeaderContainer>
 
       <ContentContainer>
-        <TitleWrap>
-          <BasicButton onClick={() => {}}>경로 보기</BasicButton>
-        </TitleWrap>
-
         <ContentWrap>
           <FilterWrap>
             <TextInput
@@ -151,7 +150,7 @@ const RealtimeMonitoringPage: React.FC = () => {
                   key={`${vehicle.vehicleId}-${idx}`}
                   id={vehicle.vehicleId}
                   licensePlate={vehicle.registrationNumber}
-                  carInfo={`${vehicle.manufacturer} ${vehicle.modelName} | ${vehicle.customerName}`}
+                  carInfo={`${vehicle.manufacturer} ${vehicle.modelName}${vehicle.customerName ? ' | ' + vehicle.customerName : ''}`}
                   onClick={() => handleVehicleClick(vehicle)}
                   isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
                 />
