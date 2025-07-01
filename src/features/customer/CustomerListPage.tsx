@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '@/libs/axios';
 import CustomerCreateModal from './CustomerCreateModal.tsx';
-
 import {
   DashboardContainer,
   TitleContainer,
@@ -346,18 +345,12 @@ const CustomerListPage: React.FC = () => {
         />
         {totalPages > 1 && (
           <PaginationContainer>
-            <PageArrowButton disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>
-              {'<'}
-            </PageArrowButton>
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
-              pageBlockSize={5}
+              pageBlockSize={10}
             />
-            <PageArrowButton disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)}>
-              {'>'}
-            </PageArrowButton>
           </PaginationContainer>
         )}
       </TableContainer>
