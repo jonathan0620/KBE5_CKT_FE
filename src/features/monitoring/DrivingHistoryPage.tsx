@@ -384,12 +384,14 @@ const DrivingHistoryPage: React.FC = () => {
             엑셀 다운로드
           </button>
         </div>
-        <BasicTable
-          tableHeaders={VEHICLE_LOG_TABLE_HEADERS}
-          data={vehicleLogData}
-          message={isLoading ? '로딩 중입니다...' : error || '기간을 조회해 주세요.'}
-          onRowClick={handleVehicleSelect}
-        />
+        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <BasicTable
+            tableHeaders={VEHICLE_LOG_TABLE_HEADERS}
+            data={vehicleLogData}
+            message={isLoading ? '로딩 중입니다...' : error || '기간을 조회해 주세요.'}
+            onRowClick={handleVehicleSelect}
+          />
+        </div>
       </TableContainer>
 
       {/* ──────────── 주간/일별 운행 내역 ──────────── */}
