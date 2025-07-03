@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 
 const DEFAULT_LAT = 37.5665;
 const DEFAULT_LON = 126.978;
@@ -25,13 +22,6 @@ import { Text } from '@/components/ui/text/Text';
 import VehicleCard from './VehicleCard';
 import api from '@/libs/axios';
 
-const customIcon = new L.Icon({
-  iconUrl: '/icon/marker.svg',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-});
-
 interface Vehicle {
   vehicleId: number;
   registrationNumber: string;
@@ -51,7 +41,11 @@ const RealtimeMonitoringPage: React.FC = () => {
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [status, setStatus] = useState({ total: 0, running: 0, stopped: 0 });
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const kakaoMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const infoWindowRef = useRef<any>(null);
+  const clustererRef = useRef<any>(null);
 
   const filterVehicles = useCallback(
     (value: string) => {
@@ -113,13 +107,123 @@ const RealtimeMonitoringPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // 카카오맵 로드 및 마커 표시
+  useEffect(() => {
+    const checkKakaoAndLoad = () => {
+      const kakao = (window as any).kakao;
+      if (kakao && kakao.maps && kakao.maps.load) {
+        kakao.maps.load(() => {
+          initMap();
+        });
+      } else {
+        setTimeout(checkKakaoAndLoad, 100);
+      }
+    };
+    checkKakaoAndLoad();
+  }, [filteredVehicles]);
+
+  const initMap = () => {
+    if (!mapRef.current) return;
+    // 기존 마커 제거
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+    if (infoWindowRef.current) {
+      infoWindowRef.current.close();
+      infoWindowRef.current = null;
+    }
+    const kakao = (window as any).kakao;
+    if (!kakao || !kakao.maps) return;
+    // 지도 생성
+    if (!kakaoMapRef.current) {
+      kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
+        center: new kakao.maps.LatLng(DEFAULT_LAT, DEFAULT_LON),
+        level: DEFAULT_ZOOM_LEVEL,
+      });
+    }
+    const map = kakaoMapRef.current;
+    // 클러스터러 생성(최초 1회만)
+    if (!clustererRef.current) {
+      clustererRef.current = new kakao.maps.MarkerClusterer({
+        map: map,
+        averageCenter: true,
+        minLevel: 10,
+      });
+    }
+    const clusterer = clustererRef.current;
+    clusterer.clear(); // 기존 클러스터링 마커 제거
+    // 마커 생성 및 클러스터러에 추가
+    const markers = filteredVehicles
+      .filter(vehicle => vehicle.lat && vehicle.lon)
+      .map(vehicle => {
+        const lat = Number(vehicle.lat);
+        const lon = Number(vehicle.lon);
+        const marker = new kakao.maps.Marker({
+          position: new kakao.maps.LatLng(lat, lon),
+          image: new kakao.maps.MarkerImage('/icon/marker.svg', new kakao.maps.Size(32, 32), {
+            offset: new kakao.maps.Point(16, 32),
+          }),
+        });
+        // 커스텀 오버레이 (인포윈도우 대체)
+        const contentHTML = `
+          <div style="
+            font-family: 'sans-serif';
+            min-width: 150px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 12px 16px;
+            color: #222;
+            font-size: 14px;
+          ">
+            <div style="font-weight:700;display:flex;align-items:center;gap:6px;">
+              <img src='/icon/marker.svg' width='14' height='14' alt='icon'/>
+              <span>${vehicle.registrationNumber}</span>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:#6b7280;">
+              <div style="display:flex;justify-content:space-between;">
+                <span>차량 모델</span>
+                <span style="color:#111;">${vehicle.manufacturer} ${vehicle.modelName}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span>고객명</span>
+                <span style="color:#111;">${vehicle.customerName}</span>
+              </div>
+            </div>
+          </div>
+        `;
+        const overlay = new kakao.maps.CustomOverlay({
+          content: contentHTML,
+          position: new kakao.maps.LatLng(lat, lon),
+          xAnchor: 0.5,
+          yAnchor: 1.5,
+          zIndex: 100,
+        });
+        kakao.maps.event.addListener(marker, 'click', function () {
+          if (infoWindowRef.current) infoWindowRef.current.setMap(null);
+          overlay.setMap(map);
+          infoWindowRef.current = overlay;
+          setSelectedVehicle(vehicle);
+          map.setCenter(new kakao.maps.LatLng(lat, lon));
+          map.setLevel(3);
+        });
+        return marker;
+      });
+
+    clusterer.addMarkers(markers);
+
+    markersRef.current = markers;
+  };
+
   const handleVehicleClick = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-    if (vehicle.lat && vehicle.lon && mapRef.current) {
-      const lat = Number(vehicle.lat);
-      const lon = Number(vehicle.lon);
-      mapRef.current.closePopup();
-      mapRef.current.setView([lat, lon], 15);
+    if (vehicle.lat && vehicle.lon && kakaoMapRef.current) {
+      const kakao = (window as any).kakao;
+      if (kakao && kakao.maps) {
+        const lat = Number(vehicle.lat);
+        const lon = Number(vehicle.lon);
+        kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lon));
+        kakaoMapRef.current.setLevel(3);
+      }
     }
   }, []);
 
@@ -161,48 +265,7 @@ const RealtimeMonitoringPage: React.FC = () => {
             </VehicleList>
           </FilterWrap>
           <MapWrap>
-            <MapContainer
-              center={[DEFAULT_LAT, DEFAULT_LON]}
-              zoom={DEFAULT_ZOOM_LEVEL}
-              style={{ height: '100%', width: '100%' }}
-              ref={mapRef}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              {filteredVehicles.map(vehicle => {
-                if (vehicle.lat && vehicle.lon) {
-                  const lat = Number(vehicle.lat);
-                  const lon = Number(vehicle.lon);
-                  return (
-                    <Marker key={vehicle.vehicleId} position={[lat, lon]} icon={customIcon}>
-                      <Popup closeButton={false}>
-                        <div style={{ fontFamily: 'sans-serif', minWidth: 150 }}>
-                          <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <img src="/icon/marker.svg" width={14} height={14} alt="icon" />
-                            <span>{vehicle.registrationNumber}</span>
-                          </div>
-                          <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span>차량 모델</span>
-                              <span style={{ color: '#111' }}>
-                                {vehicle.manufacturer} {vehicle.modelName}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span>고객명</span>
-                              <span style={{ color: '#111' }}>{vehicle.customerName}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                }
-                return null;
-              })}
-            </MapContainer>
+            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
           </MapWrap>
         </ContentWrap>
       </ContentContainer>
