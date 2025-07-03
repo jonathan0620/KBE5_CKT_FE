@@ -3,6 +3,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 const DEFAULT_LAT = 37.5665;
 const DEFAULT_LON = 126.978;
 const DEFAULT_ZOOM_LEVEL = 12;
+const OVERLAY_X_ANCHOR = 0.5;
+const OVERLAY_Y_ANCHOR = 1.5;
+const OVERLAY_Z_INDEX = 100;
+const FOCUSED_ZOOM_LEVEL = 3;
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 
@@ -194,9 +198,9 @@ const RealtimeMonitoringPage: React.FC = () => {
         const overlay = new kakao.maps.CustomOverlay({
           content: contentHTML,
           position: new kakao.maps.LatLng(lat, lon),
-          xAnchor: 0.5,
-          yAnchor: 1.5,
-          zIndex: 100,
+          xAnchor: OVERLAY_X_ANCHOR,
+          yAnchor: OVERLAY_Y_ANCHOR,
+          zIndex: OVERLAY_Z_INDEX,
         });
         kakao.maps.event.addListener(marker, 'click', function () {
           if (infoWindowRef.current) infoWindowRef.current.setMap(null);
@@ -204,7 +208,7 @@ const RealtimeMonitoringPage: React.FC = () => {
           infoWindowRef.current = overlay;
           setSelectedVehicle(vehicle);
           map.setCenter(new kakao.maps.LatLng(lat, lon));
-          map.setLevel(3);
+          map.setLevel(FOCUSED_ZOOM_LEVEL);
         });
         return marker;
       });
