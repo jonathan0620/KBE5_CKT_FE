@@ -45,7 +45,6 @@ interface CustomerTableData {
   joinDate: string;
   status: '활성' | '비활성';
   type: 'INDIVIDUAL' | 'CORPORATE';
-  index?: number;
 }
 
 const statusMap: Record<string, CustomerTableData['status']> = {
@@ -149,7 +148,6 @@ const statusBadgeMap = {
 };
 
 const personalTableHeaders = [
-  { label: '번호', key: 'index', width: '60px' },
   { label: '이름', key: 'name', width: '100px' },
   { label: '연락처', key: 'phone', width: '130px' },
   { label: '생년월일', key: 'birth', width: '110px' },
@@ -160,7 +158,6 @@ const personalTableHeaders = [
 ];
 
 const corporateTableHeaders = [
-  { label: '번호', key: 'index', width: '60px' },
   { label: '이름', key: 'name', width: '120px' },
   { label: '연락처', key: 'phone', width: '130px' },
   { label: '이메일', key: 'email', width: '200px' },
@@ -174,6 +171,7 @@ const ITEMS_PER_PAGE = 10;
 
 const CustomerListPage: React.FC = () => {
   const navigate = useNavigate();
+  const companyId = Number(localStorage.getItem('companyId'));
 
   const [type, setType] = useState<'INDIVIDUAL' | 'CORPORATE'>('INDIVIDUAL');
   const [filters, setFilters] = useState({ status: '전체', keyword: '' });
@@ -184,17 +182,20 @@ const CustomerListPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [summary, setSummary] = useState({ total: 0, individual: 0, corporate: 0, renting: 0 });
 
+  const fetchSummaryData = useCallback(async () => {
+    try {
+      const response = await api.get('/api/v1/customers/summary', {
+        headers: { 'X-User-Id': companyId },
+      });
+      setSummary(response.data.data);
+    } catch (err) {
+      console.error('고객 요약 정보 조회 실패:', err);
+    }
+  }, [companyId]);
+
   useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const response = await api.get('/api/v1/customers/summary');
-        setSummary(response.data.data);
-      } catch (err) {
-        console.error('고객 요약 정보 조회 실패:', err);
-      }
-    };
-    fetchSummary();
-  }, []);
+    fetchSummaryData();
+  }, [fetchSummaryData]);
 
   const fetchCustomers = useCallback(async () => {
     setIsLoading(true);
@@ -207,6 +208,7 @@ const CustomerListPage: React.FC = () => {
           status: filters.status !== '전체' ? statusApiMap[filters.status as keyof typeof statusApiMap] : undefined,
           keyword: filters.keyword || undefined,
         },
+        headers: { 'X-User-Id': companyId },
       });
       const customerList = response.data?.data?.list;
       if (customerList && Array.isArray(customerList)) {
@@ -216,6 +218,7 @@ const CustomerListPage: React.FC = () => {
             index: customerList.length - idx,
           }))
         );
+        // setCustomers(customerList.map(transformCustomerData));
       } else {
         setCustomers([]);
       }
@@ -225,11 +228,16 @@ const CustomerListPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [filters, companyId]);
 
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
+
+  const refreshData = useCallback(() => {
+    fetchSummaryData();
+    fetchCustomers();
+  }, [fetchSummaryData, fetchCustomers]);
 
   const handleTypeSelect = useCallback((value: 'INDIVIDUAL' | 'CORPORATE') => {
     setType(value);
@@ -338,8 +346,6 @@ const CustomerListPage: React.FC = () => {
           data={pagedData}
           message={tableMessage}
           onRowClick={row => {
-            console.log('클릭한 row:', row);
-            console.log('상태', row.status);
             navigate(`/customers/${row.id}`);
           }}
         />
@@ -359,7 +365,7 @@ const CustomerListPage: React.FC = () => {
           key={type}
           type={type}
           onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={fetchCustomers}
+          onSuccess={refreshData}
         />
       )}
     </DashboardContainer>
