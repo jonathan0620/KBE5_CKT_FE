@@ -171,7 +171,6 @@ const ITEMS_PER_PAGE = 10;
 
 const CustomerListPage: React.FC = () => {
   const navigate = useNavigate();
-  const companyId = Number(localStorage.getItem('companyId'));
 
   const [type, setType] = useState<'INDIVIDUAL' | 'CORPORATE'>('INDIVIDUAL');
   const [filters, setFilters] = useState({ status: '전체', keyword: '' });
@@ -184,14 +183,12 @@ const CustomerListPage: React.FC = () => {
 
   const fetchSummaryData = useCallback(async () => {
     try {
-      const response = await api.get('/api/v1/customers/summary', {
-        headers: { 'X-User-Id': companyId },
-      });
+      const response = await api.get('/api/v1/customers/summary');
       setSummary(response.data.data);
     } catch (err) {
       console.error('고객 요약 정보 조회 실패:', err);
     }
-  }, [companyId]);
+  }, []);
 
   useEffect(() => {
     fetchSummaryData();
@@ -208,7 +205,6 @@ const CustomerListPage: React.FC = () => {
           status: filters.status !== '전체' ? statusApiMap[filters.status as keyof typeof statusApiMap] : undefined,
           keyword: filters.keyword || undefined,
         },
-        headers: { 'X-User-Id': companyId },
       });
       const customerList = response.data?.data?.list;
       if (customerList && Array.isArray(customerList)) {
@@ -228,7 +224,7 @@ const CustomerListPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, companyId]);
+  }, [filters]);
 
   useEffect(() => {
     fetchCustomers();
@@ -273,7 +269,6 @@ const CustomerListPage: React.FC = () => {
             c.phone.includes(filters.keyword) ||
             c.email.includes(filters.keyword))
       );
-    console.log(`[데이터 필터링] 타입: ${type}, 필터 후 데이터 수: ${data.length}`);
     return data;
   }, [customers, type, filters]);
 
