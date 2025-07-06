@@ -64,18 +64,45 @@ const CustomerDetailPage: React.FC = () => {
   };
 
   const handleConfirm = async () => {
-    if (!form.email || !form.licenseNumber) {
-      alert('이메일과 운전면허번호는 필수입니다.');
+    if (!form.email?.trim()) {
+      alert('이메일은 필수 입력 항목입니다.');
       return;
+    }
+    const emailPattern = /^\S+@\S+\.\S+$/;
+    if (!emailPattern.test(form.email)) {
+      alert('유효한 이메일을 입력해주세요.');
+      return;
+    }
+    if (!form.licenseNumber?.trim()) {
+      alert('운전면허번호는 필수 입력 항목입니다.');
+      return;
+    }
+    // 생년월일 미래 날짜 차단
+    if (form.birthday) {
+      const today = new Date().toISOString().split('T')[0];
+      if (form.birthday > today) {
+        alert('생년월일은 오늘 이전 날짜여야 합니다.');
+        return;
+      }
     }
 
     try {
-      await api.put(`/api/v1/customers/${id}`, form);
+      const response = await api.put(`/api/v1/customers/${id}`, form);
+      if (response.data.code !== '000') {
+        alert(response.data.message || '수정에 실패했습니다.');
+        return;
+      }
       alert('수정되었습니다.');
       setCustomer(form);
       setIsEditMode(false);
-    } catch (e) {
-      alert('수정에 실패했습니다.');
+    } catch (e: any) {
+      const serverMessage = e.response?.data?.message;
+      if (serverMessage === '이미 등록된 면허번호입니다.') {
+        alert(serverMessage);
+      } else {
+        alert('수정에 실패했습니다.');
+      }
+      console.error('[UPDATE 에러]', e);
     }
   };
 

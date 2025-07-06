@@ -9,6 +9,8 @@ interface Props {
   onSuccess: () => void;
 }
 
+const today = new Date().toISOString().split('T')[0];
+
 const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSuccess }) => {
   const [type, setType] = useState<'INDIVIDUAL' | 'CORPORATE'>(initialType);
   const [form, setForm] = useState({
@@ -47,8 +49,14 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim() || !form.license.trim()) {
-      alert('이름과 운전면허번호는 필수 입력 항목입니다.');
+    if (!form.name.trim() || !form.email.trim() || !form.license.trim()) {
+      alert('이름, 이메일, 운전면허번호는 필수 입력 항목입니다.');
+      return;
+    }
+
+    const emailPattern = /^\S+@\S+\.\S+$/;
+    if (!form.email.trim() || !emailPattern.test(form.email)) {
+      alert('유효한 이메일을 입력해주세요.');
       return;
     }
 
@@ -78,15 +86,18 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
               createdAt: form.joinDate,
             };
 
-      await api.post('/api/v1/customers', payload);
-
-      onSuccess(); // 리스트 새로고침
-
+      const response = await api.post('/api/v1/customers', payload);
+      const { code, message } = response.data;
+      if (code !== '000') {
+        alert(message);
+        return;
+      }
+      onSuccess();
       alert('사용자를 추가했습니다!');
       onClose();
-    } catch (err) {
+    } catch (err: any) {
+      console.error('[POST 에러]', err);
       alert('등록 중 오류가 발생했습니다.');
-      console.error(err);
     }
   };
 
@@ -134,7 +145,12 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
               </InputField>
               <InputField>
                 <Label>생년월일</Label>
-                <Input type="date" value={form.birth} onChange={e => handleChange('birth', e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.birth}
+                  onChange={e => handleChange('birth', e.target.value)}
+                  max={today}
+                />
               </InputField>
               <InputField>
                 <Label>이메일</Label>
@@ -154,7 +170,12 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
               </InputField>
               <InputField>
                 <Label>가입일자</Label>
-                <Input type="date" value={form.joinDate} onChange={e => handleChange('joinDate', e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.joinDate}
+                  onChange={e => handleChange('joinDate', e.target.value)}
+                  max={today}
+                />
               </InputField>
             </>
           ) : (
@@ -218,7 +239,12 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
               </InputField>
               <InputField>
                 <Label>가입일자</Label>
-                <Input type="date" value={form.joinDate} onChange={e => handleChange('joinDate', e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.joinDate}
+                  onChange={e => handleChange('joinDate', e.target.value)}
+                  max={today}
+                />
               </InputField>
             </>
           )}
