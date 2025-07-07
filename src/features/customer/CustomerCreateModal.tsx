@@ -60,6 +60,28 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
       return;
     }
 
+    if (type === 'INDIVIDUAL') {
+      const birthDate = new Date(form.birth);
+      const today = new Date();
+      const legalDate = new Date();
+      legalDate.setFullYear(today.getFullYear() - 18);
+
+      if (!form.birth) {
+        alert('생년월일을 입력해주세요.');
+        return;
+      }
+
+      if (birthDate > today) {
+        alert('생년월일은 오늘보다 이전이어야 합니다.');
+        return;
+      }
+
+      if (birthDate > legalDate) {
+        alert('운전면허 발급 가능한 생년월일이 아닙니다. 만 18세 이상만 등록 가능합니다.');
+        return;
+      }
+    }
+
     try {
       const payload =
         type === 'INDIVIDUAL'

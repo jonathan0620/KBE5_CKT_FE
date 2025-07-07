@@ -77,11 +77,19 @@ const CustomerDetailPage: React.FC = () => {
       alert('운전면허번호는 필수 입력 항목입니다.');
       return;
     }
-    // 생년월일 미래 날짜 차단
+    // 생년월일 유효성 검사: 미래 날짜 차단 + 만 18세 이상만 등록 가능
     if (form.birthday) {
-      const today = new Date().toISOString().split('T')[0];
-      if (form.birthday > today) {
+      const today = new Date();
+      const selectedDate = new Date(form.birthday);
+      const legalDate = new Date();
+      legalDate.setFullYear(today.getFullYear() - 18);
+      const todayStr = today.toISOString().split('T')[0];
+      if (form.birthday > todayStr) {
         alert('생년월일은 오늘 이전 날짜여야 합니다.');
+        return;
+      }
+      if (selectedDate > legalDate) {
+        alert('운전면허 발급 가능한 생년월일이 아닙니다. 만 18세 이상만 등록 가능합니다.');
         return;
       }
     }
