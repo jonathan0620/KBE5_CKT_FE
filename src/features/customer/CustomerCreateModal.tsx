@@ -2,6 +2,7 @@ import { BasicButton } from '@/components/ui/button/BasicButton';
 import api from '@/libs/axios';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { toast } from 'react-toastify';
 
 interface Props {
   type: 'INDIVIDUAL' | 'CORPORATE';
@@ -50,13 +51,13 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.email.trim() || !form.license.trim()) {
-      alert('이름, 이메일, 운전면허번호는 필수 입력 항목입니다.');
+      toast.info('이름, 이메일, 운전면허번호는 필수 입력 항목입니다.');
       return;
     }
 
     const emailPattern = /^\S+@\S+\.\S+$/;
     if (!form.email.trim() || !emailPattern.test(form.email)) {
-      alert('유효한 이메일을 입력해주세요.');
+      toast.error('유효한 이메일을 입력해주세요.');
       return;
     }
 
@@ -67,17 +68,17 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
       legalDate.setFullYear(today.getFullYear() - 18);
 
       if (!form.birth) {
-        alert('생년월일을 입력해주세요.');
+        toast.error('생년월일을 입력해주세요.');
         return;
       }
 
       if (birthDate > today) {
-        alert('생년월일은 오늘보다 이전이어야 합니다.');
+        toast.error('생년월일은 오늘보다 이전이어야 합니다.');
         return;
       }
 
       if (birthDate > legalDate) {
-        alert('운전면허 발급 가능한 생년월일이 아닙니다. 만 18세 이상만 등록 가능합니다.');
+        toast.error('운전면허 발급 가능한 생년월일이 아닙니다. 만 18세 이상만 등록 가능합니다.');
         return;
       }
     }
@@ -111,15 +112,15 @@ const CustomerCreateModal: React.FC<Props> = ({ type: initialType, onClose, onSu
       const response = await api.post('/api/v1/customers', payload);
       const { code, message } = response.data;
       if (code !== '000') {
-        alert(message);
+        toast.error(message);
         return;
       }
       onSuccess();
-      alert('사용자를 추가했습니다!');
+      toast.success('사용자를 추가했습니다!');
       onClose();
     } catch (err: any) {
       console.error('[POST 에러]', err);
-      alert('등록 중 오류가 발생했습니다.');
+      toast.error('등록 중 오류가 발생했습니다.');
     }
   };
 
