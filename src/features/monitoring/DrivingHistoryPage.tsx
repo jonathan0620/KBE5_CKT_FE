@@ -477,7 +477,7 @@ const DrivingHistoryPage: React.FC = () => {
           <SummaryCard label="운행횟수" value={summary.totalCount} unit="회" />
         </div>
         {vehicleLogData.length > 0 ? (
-          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
             <BasicTable
               tableHeaders={VEHICLE_LOG_TABLE_HEADERS}
               data={vehicleLogData}
