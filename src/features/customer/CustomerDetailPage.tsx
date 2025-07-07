@@ -236,7 +236,9 @@ const CustomerDetailPage: React.FC = () => {
                     <span>
                       📅 {rentalInfo.currentRental.startDate} ~ {rentalInfo.currentRental.endDate}
                     </span>
-                    <RentalStatus>{rentalInfo.currentRental.status}</RentalStatus>
+                    <RentalStatus status={rentalInfo.currentRental.status}>
+                      {rentalInfo.currentRental.status}
+                    </RentalStatus>
                   </div>
                 </div>
               </RentalInfoRow>
@@ -281,9 +283,7 @@ const CustomerDetailPage: React.FC = () => {
                         <td>{item.startDate}</td>
                         <td>{item.endDate}</td>
                         <td>
-                          <RentalStatus status={item.status === '완료' ? 'done' : undefined}>
-                            {item.status}
-                          </RentalStatus>
+                          <RentalStatus status={item.status}>{item.status}</RentalStatus>
                         </td>
                       </tr>
                     ))
@@ -378,7 +378,16 @@ const CarIcon = styled.div`
 `;
 
 const RentalStatus = styled.span<{ status?: string }>`
-  background: ${({ status }) => (status === 'done' ? '#6366f1' : '#10b981')};
+  background: ${
+    ({ status }) =>
+      status === '예약 중'
+        ? '#10b981' // 초록
+        : status === '반납 완료'
+          ? '#6366f1' // 보라
+          : status === '예약 대기'
+            ? '#2563eb' // 파랑
+            : '#9ca3af' // 기타(회색)
+  };
   color: white;
   padding: 4px 12px;
   border-radius: 12px;
