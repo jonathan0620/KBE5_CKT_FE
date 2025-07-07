@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 
@@ -151,7 +152,7 @@ const DrivingHistoryPage: React.FC = () => {
 
   const fetchVehicleLogs = async () => {
     if (!selectedMonth) {
-      alert('조회 월을 선택해주세요.');
+      toast.info('조회 월을 선택해주세요.');
       return;
     }
     setWeeklyLogData([]);
@@ -219,7 +220,7 @@ const DrivingHistoryPage: React.FC = () => {
 
   const handleExcelDownload = async () => {
     if (!selectedMonth) {
-      alert('엑셀 다운로드를 위해 조회 월을 선택해주세요.');
+      toast.info('조회 월을 선택해주세요.');
       return;
     }
     const [year, month] = selectedMonth.split('-');
@@ -248,7 +249,7 @@ const DrivingHistoryPage: React.FC = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      alert('엑셀 다운로드에 실패했습니다.');
+      toast.error('엑셀 다운로드에 실패했습니다.');
       console.error(error);
     }
   };
