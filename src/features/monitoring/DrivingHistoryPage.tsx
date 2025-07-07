@@ -433,7 +433,7 @@ const DrivingHistoryPage: React.FC = () => {
       </FilterContainer>
       <TableContainer>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <TableTitle>차량별 운행 내역</TableTitle>
+          <TableTitle style={{ fontSize: '20px', fontWeight: 600 }}>차량별 운행 내역</TableTitle>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {selectedVehicle && (
               <span
@@ -441,8 +441,8 @@ const DrivingHistoryPage: React.FC = () => {
                   background: '#EFF6FF',
                   color: '#2563EB',
                   fontWeight: 600,
-                  fontSize: '13px',
-                  padding: '4px 10px',
+                  fontSize: '16px',
+                  padding: '6px 14px',
                   borderRadius: '999px',
                 }}
               >
@@ -453,13 +453,16 @@ const DrivingHistoryPage: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
-                background: 'none',
-                border: 'none',
+                gap: 6,
+                padding: '8px 16px',
+                background: selectedVehicle ? '#22B14C' : '#E5E7EB',
+                border: '1px solid white',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: selectedVehicle ? 'white' : '#9CA3AF',
                 cursor: selectedVehicle ? 'pointer' : 'not-allowed',
-                color: selectedVehicle ? '#22B14C' : '#9CA3AF',
-                fontWeight: 700,
-                fontSize: 15,
+                transition: 'background 0.2s, color 0.2s',
               }}
               onClick={handleExcelDownload}
               disabled={!selectedVehicle}
