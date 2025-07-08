@@ -317,6 +317,7 @@ const DrivingHistoryPage: React.FC = () => {
 
   const handleVehicleSelect = async (data: VehicleLog) => {
     setSelectedVehicle(data);
+    setDailyLogData([]);
     const [year, month] = selectedMonth.split('-');
     const from = new Date(Number(year), Number(month) - 1, 1);
     from.setHours(0, 0, 0, 0);
