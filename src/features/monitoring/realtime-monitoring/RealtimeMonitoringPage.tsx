@@ -75,9 +75,6 @@ const RealtimeMonitoringPage: React.FC = () => {
       if (response.data.code === '000' && Array.isArray(response.data.data)) {
         setVehicles(response.data.data);
         setFilteredVehicles(response.data.data);
-
-        const runningCount = (response.data.data ?? []).length;
-        setStatus({ total: status.total, running: runningCount, stopped: status.total - runningCount });
       } else {
         setVehicles([]);
       }
@@ -132,7 +129,7 @@ const RealtimeMonitoringPage: React.FC = () => {
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
     if (infoWindowRef.current) {
-      infoWindowRef.current.close();
+      infoWindowRef.current.setMap(null);
       infoWindowRef.current = null;
     }
     const kakao = (window as any).kakao;
@@ -188,10 +185,15 @@ const RealtimeMonitoringPage: React.FC = () => {
                 <span>차량 모델</span>
                 <span style="color:#111;">${vehicle.manufacturer} ${vehicle.modelName}</span>
               </div>
-              <div style="display:flex;justify-content:space-between;">
-                <span>고객명</span>
-                <span style="color:#111;">${vehicle.customerName}</span>
-              </div>
+              ${
+                vehicle.customerName
+                  ? `
+                <div style="display:flex;justify-content:space-between;">
+                  <span>고객명</span>
+                  <span style="color:#111;">${vehicle.customerName}</span>
+                </div>`
+                  : ''
+              }
             </div>
           </div>
         `;
@@ -203,12 +205,14 @@ const RealtimeMonitoringPage: React.FC = () => {
           zIndex: OVERLAY_Z_INDEX,
         });
         kakao.maps.event.addListener(marker, 'click', function () {
-          if (infoWindowRef.current) infoWindowRef.current.setMap(null);
+          if (infoWindowRef.current) {
+            infoWindowRef.current.setMap(null);
+          }
+          map.setLevel(FOCUSED_ZOOM_LEVEL);
+          map.setCenter(new kakao.maps.LatLng(lat, lon));
           overlay.setMap(map);
           infoWindowRef.current = overlay;
           setSelectedVehicle(vehicle);
-          map.setCenter(new kakao.maps.LatLng(lat, lon));
-          map.setLevel(FOCUSED_ZOOM_LEVEL);
         });
         return marker;
       });
