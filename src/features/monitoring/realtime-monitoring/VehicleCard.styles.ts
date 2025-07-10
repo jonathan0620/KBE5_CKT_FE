@@ -10,8 +10,7 @@ export const CardContainer = styled.div<CardContainerProps>`
   display: flex;
   justify-content: space-between;
   border-radius: 6px;
-  outline: 1px ${props => (props.$isSelected ? 'var(--color-primary)' : 'var(--color-gray300)')} solid;
-  outline-offset: -1px;
+  border: 1px solid ${props => (props.$isSelected ? 'var(--color-primary)' : 'var(--color-gray300)')};
   cursor: pointer;
   background-color: ${props => (props.$isSelected ? 'var(--color-primary-light)' : 'transparent')};
   transition: all 0.2s ease-in-out;

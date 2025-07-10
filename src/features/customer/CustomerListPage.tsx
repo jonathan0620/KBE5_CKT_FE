@@ -177,7 +177,6 @@ const CustomerListPage: React.FC = () => {
     try {
       const response = await api.get('/api/v1/customers', {
         params: {
-          size: 1000,
           sort: 'createdAt,DESC',
           status: filters.status !== '전체' ? statusApiMap[filters.status as keyof typeof statusApiMap] : undefined,
           keyword: filters.keyword || undefined,
