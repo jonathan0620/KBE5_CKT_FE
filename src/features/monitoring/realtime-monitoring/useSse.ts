@@ -12,8 +12,6 @@ const SSE_URL = 'http://localhost:8080/api/v1/sse/gps';
 
 export function useSse(eventName, onMessage) {
   useEffect(() => {
-    console.log('시작');
-
     // 1. EventSource 객체 생성
     const eventSource = new EventSource(SSE_URL);
 
