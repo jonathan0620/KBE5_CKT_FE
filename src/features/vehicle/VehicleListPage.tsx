@@ -188,12 +188,10 @@ const VehicleListPage: React.FC = () => {
               value={filters.keyword || ''} // undefined 방지
               onChange={handleKeywordChange}
               onEnter={handleSearchClick} // Enter 키로 검색 실행
+              maxLength={20}
             />
           </FilterContent>
           {/* 검색 버튼 */}
-          <IconButton icon={<SearchIcon />} onClick={handleSearchClick}>
-            검색
-          </IconButton>
         </FilterWrap>
       </FilterContainer>
 
