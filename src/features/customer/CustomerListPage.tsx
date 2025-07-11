@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import debounce from 'lodash.debounce';
 import api from '@/libs/axios';
 import CustomerCreateModal from './CustomerCreateModal.tsx';
 import {
@@ -45,7 +46,6 @@ interface CustomerTableData {
   joinDate: string;
   status: '활성' | '비활성';
   type: 'INDIVIDUAL' | 'CORPORATE';
-  index?: number;
 }
 
 const statusMap: Record<string, CustomerTableData['status']> = {
@@ -112,31 +112,6 @@ const PaginationContainer = styled.div`
   margin-top: 24px;
 `;
 
-const PageArrowButton = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  border: 1px solid var(--color-gray300);
-  background: var(--color-white);
-  color: var(--color-gray600);
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--color-primaryLight);
-  }
-`;
-
 const STATUS_OPTIONS = [
   { label: '전체', value: '전체' },
   { label: '활성', value: '활성' },
@@ -149,7 +124,6 @@ const statusBadgeMap = {
 };
 
 const personalTableHeaders = [
-  { label: '번호', key: 'index', width: '60px' },
   { label: '이름', key: 'name', width: '100px' },
   { label: '연락처', key: 'phone', width: '130px' },
   { label: '생년월일', key: 'birth', width: '110px' },
@@ -160,7 +134,6 @@ const personalTableHeaders = [
 ];
 
 const corporateTableHeaders = [
-  { label: '번호', key: 'index', width: '60px' },
   { label: '이름', key: 'name', width: '120px' },
   { label: '연락처', key: 'phone', width: '130px' },
   { label: '이메일', key: 'email', width: '200px' },
@@ -171,6 +144,7 @@ const corporateTableHeaders = [
 ];
 
 const ITEMS_PER_PAGE = 10;
+const DEBOUNCE_DELAY = 400;
 
 const CustomerListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -184,17 +158,18 @@ const CustomerListPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [summary, setSummary] = useState({ total: 0, individual: 0, corporate: 0, renting: 0 });
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const response = await api.get('/api/v1/customers/summary');
-        setSummary(response.data.data);
-      } catch (err) {
-        console.error('고객 요약 정보 조회 실패:', err);
-      }
-    };
-    fetchSummary();
+  const fetchSummaryData = useCallback(async () => {
+    try {
+      const response = await api.get('/api/v1/customers/summary');
+      setSummary(response.data.data);
+    } catch (err) {
+      console.error('고객 요약 정보 조회 실패:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchSummaryData();
+  }, [fetchSummaryData]);
 
   const fetchCustomers = useCallback(async () => {
     setIsLoading(true);
@@ -202,7 +177,6 @@ const CustomerListPage: React.FC = () => {
     try {
       const response = await api.get('/api/v1/customers', {
         params: {
-          size: 1000,
           sort: 'createdAt,DESC',
           status: filters.status !== '전체' ? statusApiMap[filters.status as keyof typeof statusApiMap] : undefined,
           keyword: filters.keyword || undefined,
@@ -216,6 +190,7 @@ const CustomerListPage: React.FC = () => {
             index: customerList.length - idx,
           }))
         );
+        // setCustomers(customerList.map(transformCustomerData));
       } else {
         setCustomers([]);
       }
@@ -230,6 +205,11 @@ const CustomerListPage: React.FC = () => {
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
+
+  const refreshData = useCallback(() => {
+    fetchSummaryData();
+    fetchCustomers();
+  }, [fetchSummaryData, fetchCustomers]);
 
   const handleTypeSelect = useCallback((value: 'INDIVIDUAL' | 'CORPORATE') => {
     setType(value);
@@ -265,9 +245,28 @@ const CustomerListPage: React.FC = () => {
             c.phone.includes(filters.keyword) ||
             c.email.includes(filters.keyword))
       );
-    console.log(`[데이터 필터링] 타입: ${type}, 필터 후 데이터 수: ${data.length}`);
     return data;
   }, [customers, type, filters]);
+
+  // filters.keyword가 바뀔 때만 디바운스로 fetch
+  useEffect(() => {
+    debouncedFetch();
+  }, [filters.keyword]);
+
+  const debouncedFetch = useMemo(
+    () =>
+      debounce(() => {
+        console.log(filters.keyword);
+        fetchCustomers();
+      }, DEBOUNCE_DELAY),
+    [fetchCustomers]
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedFetch.cancel();
+    };
+  }, [debouncedFetch]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const pagedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -315,6 +314,7 @@ const CustomerListPage: React.FC = () => {
               value={filters.keyword}
               onChange={handleKeywordChange}
               onEnter={handleSearchClick}
+              maxLength={20}
             />
           </FilterContent>
           <BasicButton onClick={handleSearchClick}>검색</BasicButton>
@@ -338,8 +338,6 @@ const CustomerListPage: React.FC = () => {
           data={pagedData}
           message={tableMessage}
           onRowClick={row => {
-            console.log('클릭한 row:', row);
-            console.log('상태', row.status);
             navigate(`/customers/${row.id}`);
           }}
         />
@@ -359,7 +357,7 @@ const CustomerListPage: React.FC = () => {
           key={type}
           type={type}
           onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={fetchCustomers}
+          onSuccess={refreshData}
         />
       )}
     </DashboardContainer>

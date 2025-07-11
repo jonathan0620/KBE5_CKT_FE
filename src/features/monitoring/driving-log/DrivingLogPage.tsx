@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchDrivingLogs } from '../api/drivinglog-api';
 import { formatDateTime } from '@/utils/date';
+import debounce from 'lodash.debounce';
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 import {
@@ -14,113 +16,111 @@ import {
 } from '@/components/layout/DashboardLayout.styles';
 import { TextInput } from '@/components/ui/input/input/TextInput';
 import { DateInput } from '@/components/ui/input/date/DateInput';
-import { Dropdown } from '@/components/ui/input/dropdown/Dropdown';
-import { IconButton } from '@/components/ui/button/IconButton';
 import { BasicTable } from '@/components/ui/table/table/BasicTable';
-import { STATUS_OPTIONS, DRIVINGLOG_TABLE_HEADERS } from './types';
+import { DRIVINGLOG_TABLE_HEADERS } from './types';
 import type { DrivingLogListRequest, DrivingLogSummary } from './types';
-import { DrivingLogDetailPanel } from './DrivingLogDetailPanel';
 import { Pagination } from '@/components/ui/table/pagination/Pagination';
 import { formatCommas } from '@/utils/common';
 import { Text } from '@/components/ui/text/Text';
 
+const DEBOUNCE_DELAY = 400;
+
 const DrivingLogPage: React.FC = () => {
+  const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
     startDate: null,
     endDate: null,
   });
 
-  const [VehicleRegistrationNumber, setVehicleRegistrationNumber] = useState<string>('');
-  const [userName, setUserName] = useState<string>('');
-  const [status, setStatus] = useState<string>('');
+  const [vehicleRegistrationNumber, setVehicleRegistrationNumber] = useState<string>('');
   const [drivingLogs, setDrivingLogs] = useState<DrivingLogSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
-  const [selectedDrivingLogId, setSelectedDrivingLogId] = useState<number | null>(null);
 
   // 운행 일지 목록 가져오기
-  const fetchDrivingLogsData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError('');
+  const fetchDrivingLogsData = useCallback(
+    async (vehicleNumber?: string) => {
+      try {
+        setIsLoading(true);
+        setError('');
 
-      const params: DrivingLogListRequest = {
-        vehicleNumber: VehicleRegistrationNumber || undefined,
-        userName: userName || undefined,
-        startDate: formatDateTime(dateRange.startDate, 'yyyyMMddHHmmss'),
-        endDate: formatDateTime(dateRange.endDate, 'yyyyMMddHHmmss'),
-        type: status || undefined,
-        page: page - 1,
-        size: 10,
-      };
-
-      const data = await fetchDrivingLogs(params);
-      const parsedData: DrivingLogSummary[] = data.list.map((item: DrivingLogSummary) => {
-        return {
-          ...item,
-          startOdometer: (formatCommas(item.startOdometer) ?? '0') + ' km',
-          endOdometer: (formatCommas(item.endOdometer) ?? '0') + ' km',
-          totalDistance: (formatCommas(item.totalDistance) ?? '0') + ' km',
-          startAtFormatted: formatDateTime(new Date(item.startAt)),
-          endAtFormatted: formatDateTime(new Date(item.endAt)),
+        const params: DrivingLogListRequest = {
+          vehicleNumber: vehicleNumber || undefined,
+          startDate: formatDateTime(dateRange.startDate, 'yyyyMMddHHmmss'),
+          endDate: formatDateTime(dateRange.endDate, 'yyyyMMddHHmmss'),
+          page: page - 1,
+          size: 10,
         };
-      });
-      setDrivingLogs(parsedData);
-      setTotalPages(data.totalPages);
-    } catch (err: any) {
-      setError(err.message || '데이터를 가져오는 중 오류 발생');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, userName, VehicleRegistrationNumber, status, dateRange]);
+
+        const data = await fetchDrivingLogs(params);
+        const parsedData: DrivingLogSummary[] = data.list.map((item: DrivingLogSummary) => {
+          return {
+            ...item,
+            totalDistance: (formatCommas(item.totalDistance) ?? '0') + ' km',
+            startAtFormatted: formatDateTime(new Date(item.startAt)),
+            endAtFormatted: formatDateTime(new Date(item.endAt)),
+          };
+        });
+        setDrivingLogs(parsedData);
+        setTotalPages(data.totalPages);
+      } catch (err: any) {
+        setError(err.message || '데이터를 가져오는 중 오류 발생');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [page, dateRange]
+  );
 
   // 페이지 변경 핸들러
   const handlePageChange = useCallback((page: number) => {
     setPage(page);
   }, []);
 
-  // TextInput 변경 핸들러
+  // 디바운스된 fetch 함수 (vehicleNumber만 반응)
+  const debouncedFetch = useMemo(
+    () =>
+      debounce((value: string) => {
+        console.log(value);
+        fetchDrivingLogsData(value);
+      }, DEBOUNCE_DELAY),
+    [fetchDrivingLogsData]
+  );
+
+  // TextInput 변경 핸들러 (입력 시 디바운스 호출)
   const handleVehicleNumberChange = (value: string) => {
     setVehicleRegistrationNumber(value);
     setPage(1);
-  };
-
-  const handleUserNameChange = (value: string) => {
-    setUserName(value);
-    setPage(1);
+    debouncedFetch(value);
   };
 
   const handleDateChange = (value: { startDate: Date | null; endDate: Date | null }) => {
     setDateRange(value);
   };
 
-  const handleStatusChange = (value: string | number) => {
-    setStatus(value.toString());
-  };
-
   const handleRowClick = (rowData: DrivingLogSummary) => {
-    setSelectedDrivingLogId(rowData.id);
-    setIsDetailPanelOpen(true);
+    navigate(`/driving-log/${rowData.id}`);
   };
 
-  const handleDetailPanelClose = () => {
-    setIsDetailPanelOpen(false);
-    setSelectedDrivingLogId(null);
-  };
+  // 날짜/페이지 변경은 즉시 호출
+  useEffect(() => {
+    console.log(vehicleRegistrationNumber);
+    fetchDrivingLogsData(vehicleRegistrationNumber);
+  }, [dateRange, page]);
 
   useEffect(() => {
-    fetchDrivingLogsData();
-  }, [fetchDrivingLogsData]);
+    return () => {
+      debouncedFetch.cancel();
+    };
+  }, [debouncedFetch]);
 
   return (
     <DashboardContainer>
       <TitleContainer>
         <Text type="heading">운행 일지</Text>
       </TitleContainer>
-
       <FilterContainer>
         <FilterWrap>
           <FilterContent>
@@ -130,18 +130,10 @@ const DrivingLogPage: React.FC = () => {
               id="vehiclenumber-input"
               label="차량번호"
               icon={<SearchIcon />}
-              value={VehicleRegistrationNumber}
+              value={vehicleRegistrationNumber}
               onChange={handleVehicleNumberChange}
-            />
-
-            <TextInput
-              width="300px"
-              type="text"
-              id="username-input"
-              label="사용자"
-              icon={<SearchIcon />}
-              value={userName}
-              onChange={handleUserNameChange}
+              placeholder="차량번호 입력"
+              maxLength={20}
             />
 
             <DateInput
@@ -150,12 +142,9 @@ const DrivingLogPage: React.FC = () => {
               startDate={dateRange.startDate}
               endDate={dateRange.endDate}
               onDateChange={handleDateChange}
-              width="320px"
+              width="300px"
             />
-
-            <Dropdown width="300px" id="status" label="상태" options={STATUS_OPTIONS} onSelect={handleStatusChange} />
           </FilterContent>
-          <IconButton icon={<SearchIcon />}>검색</IconButton>
         </FilterWrap>
       </FilterContainer>
 
@@ -170,12 +159,6 @@ const DrivingLogPage: React.FC = () => {
 
         <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} pageBlockSize={10} />
       </TableContainer>
-
-      <DrivingLogDetailPanel
-        drivingLogId={selectedDrivingLogId}
-        isOpen={isDetailPanelOpen}
-        onClose={handleDetailPanelClose}
-      />
     </DashboardContainer>
   );
 };

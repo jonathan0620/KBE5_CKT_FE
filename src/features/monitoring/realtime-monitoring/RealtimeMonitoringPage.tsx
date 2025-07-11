@@ -38,6 +38,7 @@ interface Vehicle {
   lat: string | null;
   lon: string | null;
   ang: string | null;
+  stolen: boolean;
 }
 
 const VEHICLE_REFRESH_INTERVAL = Number(import.meta.env.VITE_VEHICLE_REFRESH_INTERVAL || 60000);
@@ -46,7 +47,7 @@ const RealtimeMonitoringPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
-  const [status, setStatus] = useState({ total: 0, running: 0, stopped: 0 });
+  const [status, setStatus] = useState({ total: 0, running: 0, stolen: 0, stopped: 0 });
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -107,7 +108,13 @@ const RealtimeMonitoringPage: React.FC = () => {
         setFilteredVehicles(response.data.data);
 
         const runningCount = (response.data.data ?? []).length;
-        setStatus({ total: status.total, running: runningCount, stopped: status.total - runningCount });
+        setStatus({
+          total: status.total,
+          running: runningCount,
+          stolen: status.stolen,
+          stopped: status.total - runningCount - status.stolen,
+        });
+
       } else {
         setVehicles([]);
       }
@@ -133,7 +140,7 @@ const RealtimeMonitoringPage: React.FC = () => {
           setStatus(response.data.data);
         }
       } catch (error) {
-        setStatus({ total: 0, running: 0, stopped: 0 });
+        setStatus({ total: 0, running: 0, stolen: 0, stopped: 0 });
       }
     };
     fetchStatus();
@@ -195,9 +202,13 @@ const RealtimeMonitoringPage: React.FC = () => {
       .map(vehicle => {
         const lat = Number(vehicle.lat);
         const lon = Number(vehicle.lon);
+        const vehicleData = vehicles.find(v => v.vehicleId === vehicle.vehicleId);
+        const isStolen = vehicleData?.stolen ?? false;
+
+        const markerImagePath = isStolen ? '/icon/stolenCar.svg' : '/icon/marker.svg';
         const marker = new kakao.maps.Marker({
           position: new kakao.maps.LatLng(lat, lon),
-          image: new kakao.maps.MarkerImage('/icon/marker.svg', new kakao.maps.Size(32, 32), {
+          image: new kakao.maps.MarkerImage(markerImagePath, new kakao.maps.Size(32, 32), {
             offset: new kakao.maps.Point(16, 32),
           }),
         });
@@ -222,14 +233,15 @@ const RealtimeMonitoringPage: React.FC = () => {
                 <span>차량 모델</span>
                 <span style="color:#111;">${vehicle.manufacturer} ${vehicle.modelName}</span>
               </div>
-              <div style="display:flex;justify-content:space-between;">
-                <span>고객명</span>
-                <span style="color:#111;">${vehicle.customerName}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;">
-                <span>현재 속도</span>
-                <span style="color:#111;">${vehicle.ang ?? '-'} km/h</span>
-              </div>
+              ${
+                vehicle.customerName
+                  ? `
+                <div style="display:flex;justify-content:space-between;">
+                  <span>고객명</span>
+                  <span style="color:#111;">${vehicle.customerName}</span>
+                </div>`
+                  : ''
+              }
             </div>
           </div>
         `;
@@ -241,12 +253,14 @@ const RealtimeMonitoringPage: React.FC = () => {
           zIndex: OVERLAY_Z_INDEX,
         });
         kakao.maps.event.addListener(marker, 'click', function () {
-          if (infoWindowRef.current) infoWindowRef.current.setMap(null);
+          if (infoWindowRef.current) {
+            infoWindowRef.current.setMap(null);
+          }
+          map.setLevel(FOCUSED_ZOOM_LEVEL);
+          map.setCenter(new kakao.maps.LatLng(lat, lon));
           overlay.setMap(map);
           infoWindowRef.current = overlay;
           setSelectedVehicle(vehicle);
-          map.setCenter(new kakao.maps.LatLng(lat, lon));
-          map.setLevel(FOCUSED_ZOOM_LEVEL);
         });
         return marker;
       });
@@ -278,6 +292,7 @@ const RealtimeMonitoringPage: React.FC = () => {
       <HeaderContainer>
         <StatCard label="전체 차량" count={status.total} unit="대" unitColor="blue" />
         <StatCard label="운행중 차량" count={status.running} unit="대" unitColor="green" />
+        <StatCard label="도난 차량" count={status.stolen} unit="대" unitColor="red" />
         <StatCard label="미운행 차량" count={status.stopped} unit="대" unitColor="yellow" />
       </HeaderContainer>
 

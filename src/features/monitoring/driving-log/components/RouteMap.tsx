@@ -1,50 +1,65 @@
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, useMap, Polyline } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import type { LatLngTuple } from 'leaflet';
+import { useEffect, useRef } from 'react';
 import type { LatLng } from '../types';
+
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
 
 type RouteMapProps = {
   traceLogs: LatLng[];
 };
 
-const ChangeMapCenter = ({ center }: { center: LatLngTuple }) => {
-  const map = useMap();
+const RouteMap = ({ traceLogs }: RouteMapProps) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const DEFAULT_MAP_LEVEL = 5;
 
   useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+    if (!traceLogs.length || !window.kakao || !mapRef.current) return;
 
-  return null;
-};
+    window.kakao.maps.load(() => {
+      const points = traceLogs.map(
+        log => new window.kakao.maps.LatLng(parseFloat(log.lat) / 1_000_000, parseFloat(log.lon) / 1_000_000)
+      );
 
-const RouteMap = ({ traceLogs }: RouteMapProps) => {
-  if (!traceLogs.length) return null;
+      const center = points[Math.floor(points.length / 2)];
 
-  const points: LatLngTuple[] = traceLogs.map(log => [
-    parseFloat(log.lat) / 1_000_000,
-    parseFloat(log.lon) / 1_000_000,
-  ]);
+      const map = new window.kakao.maps.Map(mapRef.current, {
+        center,
+        level: DEFAULT_MAP_LEVEL,
+      });
 
-  const center = points[Math.floor(points.length / 2)];
+      const polyline = new window.kakao.maps.Polyline({
+        path: points,
+        strokeWeight: 5,
+        strokeColor: '#007bff',
+        strokeOpacity: 0.8,
+        strokeStyle: 'solid',
+      });
+      polyline.setMap(map);
 
-  return (
-    <MapContainer
-      center={center}
-      zoom={12}
-      scrollWheelZoom={true}
-      style={{ height: '300px', width: '100%', borderRadius: '8px', marginTop: '1rem' }}
-    >
-      <ChangeMapCenter center={center} />
+      const bounds = new window.kakao.maps.LatLngBounds();
+      points.forEach(p => bounds.extend(p));
+      map.setBounds(bounds);
 
-      <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      // 출발 마커
+      new window.kakao.maps.Marker({
+        position: points[0],
+        map,
+        image: new window.kakao.maps.MarkerImage('/icon/startmarker.svg', new window.kakao.maps.Size(50, 50)),
+      });
 
-      <Polyline positions={points} color="blue" />
-    </MapContainer>
-  );
+      // 도착 마커
+      new window.kakao.maps.Marker({
+        position: points[points.length - 1],
+        map,
+        image: new window.kakao.maps.MarkerImage('/icon/endmarker.svg', new window.kakao.maps.Size(50, 50)),
+      });
+    });
+  }, [traceLogs]);
+
+  return <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: '8px' }} />;
 };
 
 export default RouteMap;

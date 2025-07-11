@@ -175,7 +175,7 @@ const RentalListPage: React.FC = () => {
               onSelect={handleStatusSelect}
             />
             <DateInput
-              width="220px"
+              width="300px"
               id="date"
               label="기간 설정"
               startDate={filters.startAt}
@@ -193,12 +193,9 @@ const RentalListPage: React.FC = () => {
               value={filters.keyword || ''}
               onChange={handleKeywordChange}
               onEnter={handleSearchClick}
+              maxLength={20}
             />
           </FilterContent>
-          {/* 검색 버튼 */}
-          <IconButton icon={<SearchIcon />} onClick={handleSearchClick}>
-            검색
-          </IconButton>
         </FilterWrap>
       </FilterContainer>
 
