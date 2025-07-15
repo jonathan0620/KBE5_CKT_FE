@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
+const SSE_URL = import.meta.env.VITE_SSE_URL;
+
 /**
  * SSE (Server-Sent Events) 연결을 위한 커스텀 React 훅
  * @param {string} url - SSE 엔드포인트 URL
  * @param {string} eventName - 구독할 이벤트 이름 (서버에서 SseEmitter.event().name()으로 설정한 이름)
  * @param {function} onMessage - 이벤트 메시지를 받았을 때 실행할 콜백 함수
  */
-const SSE_URL = 'http://localhost:8080/api/v1/sse/gps';
-
 export function useSse(eventName, onMessage) {
   useEffect(() => {
     // 1. EventSource 객체 생성
