@@ -1,6 +1,8 @@
 import { toast } from 'react-toastify';
 import React, { useState, useMemo } from 'react';
+import { Tooltip as ReactTooltip } from 'react-tooltip';
 import styled from 'styled-components';
+import 'react-tooltip/dist/react-tooltip.css';
 
 import SearchIcon from '@/assets/icons/ic-search.svg?react';
 import {
@@ -55,13 +57,72 @@ interface DailyLog {
   totalTime: string;
 }
 
+const TooltipIcon = styled.span`
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  color: #374151;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: help;
+`;
+
 const VEHICLE_LOG_TABLE_HEADERS = [
   { key: 'vehicleNumber', label: '차량번호', width: '20%' },
   { key: 'drivingDays', label: '운행일수', width: '15%' },
   { key: 'totalDistance', label: '총 주행거리', width: '15%' },
-  { key: 'averageDistance', label: '평균 주행거리', width: '15%' },
-  { key: 'averageDrivingTime', label: '평균 운행시간', width: '20%' },
-  { key: 'drivingRate', label: '운행률', width: '15%' },
+  {
+    key: 'averageDistance',
+    label: (
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        평균 주행거리
+        <TooltipIcon
+          data-tooltip-id="avg-distance-tooltip"
+          data-tooltip-html="하루에 여러 번 운행한 경우를 포함하여,<br />운행 횟수 기준으로 계산한 평균 주행거리입니다."
+        >
+          ?
+        </TooltipIcon>
+        <ReactTooltip id="avg-distance-tooltip" place="top" />
+      </span>
+    ),
+    width: '15%',
+  },
+  {
+    key: 'averageDrivingTime',
+    label: (
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        평균 운행시간
+        <TooltipIcon
+          data-tooltip-id="avg-time-tooltip"
+          data-tooltip-content="총 운행시간을 운행 횟수로 나눈 평균 시간입니다."
+        >
+          ?
+        </TooltipIcon>
+        <ReactTooltip id="avg-time-tooltip" place="top" />
+      </span>
+    ),
+    width: '20%',
+  },
+  {
+    key: 'drivingRate',
+    label: (
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        운행률
+        <TooltipIcon
+          data-tooltip-id="driving-rate-tooltip"
+          data-tooltip-html="해당 월 전체 일수 중 운행한 날의 비율입니다. <br />예: 31일 중 10일 운행 → 운행률 32.3%"
+          style={{ width: '10px' }}
+        >
+          ?
+        </TooltipIcon>
+        <ReactTooltip id="driving-rate-tooltip" place="top" />
+      </span>
+    ),
+    width: '15%',
+  },
 ];
 
 const StyledAnalysisWrapper = styled.div`
@@ -93,6 +154,15 @@ const StyledDailySection = styled.div`
   padding: 16px;
   display: flex;
   flex-direction: column;
+`;
+
+const CustomTooltipStyle = styled.div`
+  .react-tooltip {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    padding: 10px 14px !important;
+    max-width: 310px !important;
+  }
 `;
 
 const now = new Date();
@@ -396,139 +466,141 @@ const DrivingHistoryPage: React.FC = () => {
   }, [dailyLogData]);
 
   return (
-    <DashboardContainer>
-      <TitleContainer>
-        <Text type="heading">월별 통계</Text>
-      </TitleContainer>
-      <FilterContainer>
-        <FilterWrap>
-          <FilterContent>
-            <Dropdown
-              width="300px"
-              id="month-selector"
-              label="조회 월"
-              options={MONTH_OPTIONS}
-              value={selectedMonth}
-              onSelect={value => setSelectedMonth(String(value))}
-            />
-          </FilterContent>
-          <IconButton icon={<SearchIcon />} onClick={fetchVehicleLogs}>
-            조회
-          </IconButton>
-        </FilterWrap>
-      </FilterContainer>
-      <TableContainer>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <TableTitle style={{ fontSize: '20px', fontWeight: 600 }}>차량별 운행 내역</TableTitle>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {selectedVehicle && (
-              <span
+    <CustomTooltipStyle>
+      <DashboardContainer>
+        <TitleContainer>
+          <Text type="heading">월별 통계</Text>
+        </TitleContainer>
+        <FilterContainer>
+          <FilterWrap>
+            <FilterContent>
+              <Dropdown
+                width="300px"
+                id="month-selector"
+                label="조회 월"
+                options={MONTH_OPTIONS}
+                value={selectedMonth}
+                onSelect={value => setSelectedMonth(String(value))}
+              />
+            </FilterContent>
+            <IconButton icon={<SearchIcon />} onClick={fetchVehicleLogs}>
+              조회
+            </IconButton>
+          </FilterWrap>
+        </FilterContainer>
+        <TableContainer>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <TableTitle style={{ fontSize: '20px', fontWeight: 600 }}>차량별 운행 내역</TableTitle>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {selectedVehicle && (
+                <span
+                  style={{
+                    background: '#EFF6FF',
+                    color: '#2563EB',
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                  }}
+                >
+                  {selectedVehicle.vehicleNumber}
+                </span>
+              )}
+              <button
                 style={{
-                  background: '#EFF6FF',
-                  color: '#2563EB',
-                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  background: selectedVehicle ? '#22B14C' : '#E5E7EB',
+                  border: '1px solid white',
+                  borderRadius: '8px',
                   fontSize: '16px',
-                  padding: '6px 14px',
-                  borderRadius: '999px',
+                  fontWeight: 600,
+                  color: selectedVehicle ? 'white' : '#9CA3AF',
+                  cursor: selectedVehicle ? 'pointer' : 'not-allowed',
+                  transition: 'background 0.2s, color 0.2s',
                 }}
+                onClick={handleExcelDownload}
+                disabled={!selectedVehicle}
               >
-                {selectedVehicle.vehicleNumber}
-              </span>
-            )}
-            <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 16px',
-                background: selectedVehicle ? '#22B14C' : '#E5E7EB',
-                border: '1px solid white',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: 600,
-                color: selectedVehicle ? 'white' : '#9CA3AF',
-                cursor: selectedVehicle ? 'pointer' : 'not-allowed',
-                transition: 'background 0.2s, color 0.2s',
-              }}
-              onClick={handleExcelDownload}
-              disabled={!selectedVehicle}
-            >
-              엑셀 다운로드
-            </button>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', justifyContent: 'flex-end' }}>
-          <SummaryCard label="총 운행거리" value={summary.totalDistance} unit="km" />
-          <SummaryCard label="총 운행시간" value={summary.totalTime} unit="" />
-          <SummaryCard label="운행횟수" value={summary.totalCount} unit="회" />
-        </div>
-        {vehicleLogData.length > 0 ? (
-          <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-            <BasicTable
-              tableHeaders={VEHICLE_LOG_TABLE_HEADERS}
-              data={vehicleLogData}
-              message={
-                isLoading
-                  ? '로딩 중입니다...'
-                  : error || (lastQueryParams ? '선택하신 월에는 운행 내역이 없습니다.' : '기간을 조회해주세요.')
-              }
-              onRowClick={handleVehicleSelect}
-            />
-          </div>
-        ) : (
-          <div style={{ padding: '24px 0', textAlign: 'center', color: '#6b7280', fontSize: '15px' }}>
-            {lastQueryParams ? '선택하신 월에는 운행 내역이 없습니다.' : '기간을 조회해주세요.'}
-          </div>
-        )}
-        <StyledAnalysisWrapper style={{ alignItems: 'stretch' }}>
-          <StyledWeeklySection>
-            <div style={{ flex: 1, width: '100%', height: '400px' }}>
-              <TableTitle style={{ marginBottom: '12px' }}>주간 운행 그래프</TableTitle>
-              <div style={{ flex: 1, width: '100%', height: '400px' }}>
-                <Bar
-                  data={weeklyChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
-                      title: { display: false },
-                    },
-                    onClick: (event, active) => {
-                      if (!active || active.length === 0) return;
-                      const idx = active[0].index;
-                      const week = weeklyLogData[idx];
-                      if (!week || !week.startDate || !week.endDate) {
-                        return;
-                      }
-                      const weekStart = week.startDate.substring(0, 10);
-                      const weekEnd = week.endDate.substring(0, 10);
-                      setSelectedWeeklyData(week);
-                      fetchDailyLogs(weekStart, weekEnd);
-                    },
-                  }}
-                />
-              </div>
+                엑셀 다운로드
+              </button>
             </div>
-          </StyledWeeklySection>
-          <StyledDailySection>
-            <div style={{ flex: 1, width: '100%', height: '400px' }}>
-              <TableTitle style={{ marginBottom: '12px' }}>일별 운행 그래프</TableTitle>
-              <div style={{ flex: 1, width: '100%', height: '400px' }}>
-                <Bar
-                  data={dailyChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                  }}
-                />
-              </div>
+          </div>
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', justifyContent: 'flex-end' }}>
+            <SummaryCard label="총 운행거리" value={summary.totalDistance} unit="km" />
+            <SummaryCard label="총 운행시간" value={summary.totalTime} unit="" />
+            <SummaryCard label="운행횟수" value={summary.totalCount} unit="회" />
+          </div>
+          {vehicleLogData.length > 0 ? (
+            <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+              <BasicTable
+                tableHeaders={VEHICLE_LOG_TABLE_HEADERS}
+                data={vehicleLogData}
+                message={
+                  isLoading
+                    ? '로딩 중입니다...'
+                    : error || (lastQueryParams ? '선택하신 월에는 운행 내역이 없습니다.' : '기간을 조회해주세요.')
+                }
+                onRowClick={handleVehicleSelect}
+              />
             </div>
-          </StyledDailySection>
-        </StyledAnalysisWrapper>
-      </TableContainer>
-    </DashboardContainer>
+          ) : (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: '#6b7280', fontSize: '15px' }}>
+              {lastQueryParams ? '선택하신 월에는 운행 내역이 없습니다.' : '기간을 조회해주세요.'}
+            </div>
+          )}
+          <StyledAnalysisWrapper style={{ alignItems: 'stretch' }}>
+            <StyledWeeklySection>
+              <div style={{ flex: 1, width: '100%', height: '400px' }}>
+                <TableTitle style={{ marginBottom: '12px' }}>주간 운행 그래프</TableTitle>
+                <div style={{ flex: 1, width: '100%', height: '400px' }}>
+                  <Bar
+                    data={weeklyChartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        title: { display: false },
+                      },
+                      onClick: (event, active) => {
+                        if (!active || active.length === 0) return;
+                        const idx = active[0].index;
+                        const week = weeklyLogData[idx];
+                        if (!week || !week.startDate || !week.endDate) {
+                          return;
+                        }
+                        const weekStart = week.startDate.substring(0, 10);
+                        const weekEnd = week.endDate.substring(0, 10);
+                        setSelectedWeeklyData(week);
+                        fetchDailyLogs(weekStart, weekEnd);
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </StyledWeeklySection>
+            <StyledDailySection>
+              <div style={{ flex: 1, width: '100%', height: '400px' }}>
+                <TableTitle style={{ marginBottom: '12px' }}>일별 운행 그래프</TableTitle>
+                <div style={{ flex: 1, width: '100%', height: '400px' }}>
+                  <Bar
+                    data={dailyChartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                    }}
+                  />
+                </div>
+              </div>
+            </StyledDailySection>
+          </StyledAnalysisWrapper>
+        </TableContainer>
+      </DashboardContainer>
+    </CustomTooltipStyle>
   );
 };
 
