@@ -42,6 +42,7 @@ import { fetchSearchCustomer, fetchSearchVehicle } from './api/rental-api';
 import { VehicleSelectedItem } from './components/VehicleSelectedItem';
 import { formatDateTime } from '@/utils/date';
 import { VehicleSearchItem } from './components/VehicleSearchItem';
+import { toast } from 'react-toastify';
 
 // --- RentalDetailPanel 컴포넌트 props ---
 interface RentalDetailPanelProps {
@@ -144,6 +145,19 @@ export const RentalDetailPanel: React.FC<RentalDetailPanelProps> = ({ rentalId, 
   );
 
   /**
+   * 애뮬레이터 시동을 위한 페이지로 이동합니다.
+   */
+  const handleNavigateToEmulator = useCallback(() => {
+    const baseUrl = import.meta.env.VITE_EMULATOR_SERVICE_URL;
+    if (baseUrl && selectedItem?.vehicle?.id) {
+      const targetUrl = `${baseUrl}/emulator/${selectedItem?.vehicle?.id}`;
+      window.open(targetUrl, '_blank');
+    } else {
+      toast.error('시동을 할 수 없습니다.');
+    }
+  }, [selectedItem]);
+
+  /**
    * 슬라이드 패널이 닫힐 때 호출되며, 편집 모드를 초기화하고 패널을 닫습니다.
    */
   const handlePanelClose = useCallback(() => {
@@ -224,14 +238,19 @@ export const RentalDetailPanel: React.FC<RentalDetailPanelProps> = ({ rentalId, 
             )}
 
             {isStatusRented() && (
-              <BasicButton
-                onClick={() => {
-                  handleUpdateStatus(RENTAL_STATUS_RETURNED);
-                }}
-                buttonType="primary"
-              >
-                예약 반납
-              </BasicButton>
+              <>
+                <BasicButton onClick={handleNavigateToEmulator} buttonType="basic">
+                  시동 체험
+                </BasicButton>
+                <BasicButton
+                  onClick={() => {
+                    handleUpdateStatus(RENTAL_STATUS_RETURNED);
+                  }}
+                  buttonType="primary"
+                >
+                  예약 반납
+                </BasicButton>
+              </>
             )}
 
             <BasicButton onClick={handleEdit} buttonType="primary">
@@ -251,6 +270,7 @@ export const RentalDetailPanel: React.FC<RentalDetailPanelProps> = ({ rentalId, 
     handleSave,
     handleCancel,
     handleUpdateStatus,
+    handleNavigateToEmulator,
   ]);
 
   /**
